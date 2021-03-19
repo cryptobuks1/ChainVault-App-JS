@@ -24,7 +24,13 @@ function TokenData(data) {
  * @returns {Object}
  */
  exports.tokenStore = [
-	body("name", "Title must not be empty.").isLength({ min: 1 }).trim(),
+	body("name", "Name must not be empty.").isLength({ min: 1 }).trim().custom((value) => {
+		return TokenModel.findOne({name : value}).then((token) => {
+			if (token) {
+				return Promise.reject("Token already saved down");
+			}
+		});
+	}),
 	body("address", "Description must not be empty.").isLength({ min: 1 }).trim(),
 	sanitizeBody("*").escape(),
 	(req, res) => {
@@ -45,6 +51,52 @@ function TokenData(data) {
 					return apiResponse.successResponseWithData(res,"Token add Success.", tokenData);
 				});
 			}
+		} catch (err) {
+			//throw error in json response with status 500. 
+			return apiResponse.ErrorResponse(res, err);
+		}
+	}
+];
+
+/**
+ * List tokens.
+ * 
+ * @returns {Object}
+ */
+ exports.tokenList = [
+	async function (req, res) {
+		const tokens = await TokenModel.find();
+		try {
+			if(tokens.length > 0){
+				return apiResponse.successResponseWithData(res, "Operation success", tokens);
+			}else{
+				return apiResponse.successResponseWithData(res, "Operation success", []);
+			}
+		
+		} catch (err) {
+			//throw error in json response with status 500. 
+			return apiResponse.ErrorResponse(res, err);
+		}
+	}
+];
+
+/**
+ * List tokens.
+ * 
+ * @param {int} id
+ * 
+ * @returns {Object}
+ */
+ exports.token = [
+	async function (req, res) {
+		const token = await TokenModel.findOne({_id: req.params.tokenID});
+		try {
+			if(Object.keys(token).length > 0){
+				return apiResponse.successResponseWithData(res, "Operation success", token);
+			}else{
+				return apiResponse.successResponseWithData(res, "Operation success", []);
+			}
+		
 		} catch (err) {
 			//throw error in json response with status 500. 
 			return apiResponse.ErrorResponse(res, err);

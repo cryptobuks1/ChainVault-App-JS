@@ -49,17 +49,15 @@ exports.signup = [
 	sanitizeBody("level").escape(),
 	// Process request after validation and sanitization.
 	(req, res) => {
-		debugger;
 		try {
 			// Extract the validation errors from a request.
 			const errors = validationResult(req);
 			if (!errors.isEmpty()) {
 				// Display sanitized values/errors messages.
 				return apiResponse.validationErrorWithData(res, "Validation Error.", errors.array());
-			}else {
+			} else {
 				// create wallet
 				var account = authUtils.createWallet();
-				console.log(account);
 				//hash input password
 				bcrypt.hash(req.body.password,10,function(err, hash) {
 					// Create User object with escaped and trimmed data
@@ -123,6 +121,7 @@ exports.login = [
 									email: user.email,
 									remoteAddress: user.remoteAddress,
 									level: user.level,
+									localAddress: user.localAddress
 								};
 								//Prepare JWT token for authentication
 								const jwtPayload = userData;
@@ -133,11 +132,11 @@ exports.login = [
 								//Generated JWT token with Payload and secret.
 								userData.token = jwt.sign(jwtPayload, secret, jwtData);
 								return apiResponse.successResponseWithData(res,"Login Success.", userData);
-							}else{
+							} else{
 								return apiResponse.unauthorizedResponse(res, "Email or Password wrong.");
 							}
 						});
-					}else{
+					} else{
 						return apiResponse.unauthorizedResponse(res, "Email or Password wrong.");
 					}
 				});

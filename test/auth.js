@@ -21,15 +21,15 @@ describe("Auth", () => {
 	const testData = {
 		"email":"test@gmail.com",
 		"password":"password123",
-		"remote_address":"0xB9b1225afcFf6AF2c1c958699a2EEbBAF9352964",
+		"remoteAddress":"0xB9b1225afcFf6AF2c1c958699a2EEbBAF9352964",
 		"level":true
 	};
 
 	/*
   * Test the /POST route
   */
-	describe("/POST Register", () => {
-		it("It should send validation error for Register", (done) => {
+	describe("/POST Signup", () => {
+		it("It should send validation error for Signup", (done) => {
 			chai.request(server)
 				.post("/api/auth/signup")
 				.send({"email": testData.email})

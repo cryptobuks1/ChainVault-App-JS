@@ -15,9 +15,14 @@ MongoClient.connect(MONGODB_URL, { useUnifiedTopology: true }, function(err, db)
 
   // fill tokens
   var tokens = [
-    { name: "DAI", address: "0x5592ec0cfb4dbc12d3ab100b257153436a1f0fea"},
-    { name: "BAT", address: "0xbf7a7169562078c96f0ec1a8afd6ae50f12e5a99"},
-    { name: "USDC", address: "0x4DBCdF9B62e891a7cec5A2568C3F4FAF9E8Abe2b"},
+    { name: "ETH", address: "0x0", decimal: 18},
+    { name: "DAI", address: "0x5592EC0cfb4dbc12D3aB100b257153436a1f0FEa", decimal: 18},
+    { name: "BAT", address: "0xbF7A7169562078c96f0eC1A8aFD6aE50f12e5A99", decimal: 18},
+    { name: "USDC", address: "0x4DBCdF9B62e891a7cec5A2568C3F4FAF9E8Abe2b", decimal: 18},
+    { name: "cDAI", address: "0x6D7F0754FFeb405d23C51CE938289d4835bE3b14", decimal: 8},
+    { name: "cUSDC", address: "0x5B281A6DdA0B271e91ae35DE655Ad301C976edb1", decimal: 8},
+    { name: "cBAT", address: "0xEBf1A11532b93a529b5bC942B4bAA98647913002", decimal: 8},
+    { name: "cETH", address: "0xd6801a1dffcd0a410336ef88def4320d6df1883e", decimal: 8}
   ];
   insert(dbo, "tokens", tokens);
 

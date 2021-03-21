@@ -1,5 +1,5 @@
 const TokenModel = require("../models/TokenModel");
-const authUtils = require("./utils/authUtils");
+const utils = require("./utils/utils");
 
 const { body,validationResult } = require("express-validator");
 const { sanitizeBody } = require("express-validator");
@@ -18,7 +18,7 @@ mongoose.set("useFindAndModify", false);
 	auth,
 	async function (req, res) {
 		try {
-			var balanceList = await authUtils.getBalances(req.user);
+			var balanceList = await utils.getBalances(req.user);
 			if(Object.keys(balanceList).length > 0){
 				return apiResponse.successResponseWithData(res, "Operation success", balanceList);
 			}else{
@@ -40,7 +40,7 @@ mongoose.set("useFindAndModify", false);
 	auth,
 	async function (req, res) {
 		try {
-			var balance = await authUtils.getBalance(req.user, req.params.tokenName);
+			var balance = await utils.getBalance(req.user, req.params.tokenName);
 			if(Object.keys(balance).length > 0){
 				return apiResponse.successResponseWithData(res, "Operation success", balance);
 			}else{

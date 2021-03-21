@@ -1,5 +1,5 @@
 const UserModel = require("../models/UserModel");
-const authUtils = require("./utils/authUtils");
+const utils = require("./utils/utils");
 
 const { body,validationResult } = require("express-validator");
 const { sanitizeBody } = require("express-validator");
@@ -57,7 +57,7 @@ exports.signup = [
 				return apiResponse.validationErrorWithData(res, "Validation Error.", errors.array());
 			} else {
 				// create wallet
-				var account = authUtils.createWallet();
+				var account = utils.createWallet();
 				//hash input password
 				bcrypt.hash(req.body.password,10,function(err, hash) {
 					// Create User object with escaped and trimmed data

@@ -89,7 +89,7 @@ function TokenData(data) {
  */
  exports.token = [
 	async function (req, res) {
-		const token = await TokenModel.findOne({_id: req.params.tokenID});
+		const token = await TokenModel.findOne({name: req.params.tokenName});
 		try {
 			if(Object.keys(token).length > 0){
 				return apiResponse.successResponseWithData(res, "Operation success", token);

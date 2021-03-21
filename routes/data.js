@@ -5,6 +5,6 @@ var router = express.Router();
 
 router.post("/tokens", DataController.tokenStore);
 router.get("/tokens", DataController.tokenList);
-router.get("/tokens/:tokenID", DataController.token);
+router.get("/tokens/:tokenName", DataController.token);
 
 module.exports = router;

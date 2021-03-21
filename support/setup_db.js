@@ -24,7 +24,7 @@ MongoClient.connect(MONGODB_URL, { useUnifiedTopology: true }, function(err, db)
   // fill users
   var users = [
     { email: "test@gmail.com", password: "$2b$10$ZyWLtNjZ5fKGsH/GjPgFteb3/b5tT0ne92TTAkqaSU4Eji6vK1Pqa", remoteAddress: "0xB9b1225afcFf6AF2c1c958699a2EEbBAF9352964",
-      level: true, localAddress: "0xD93ec03787218Ea08EA3AAf36064A0f7F62543A4", localPrivateKey: "98c642e73ab4e301a8234a90a3d47ebdd19a54897c2b037c74bee853e5f09771"},
+      level: true, localAddress: "0xF039c2076bAc51eB12eA188013ee632Fbd354498", localPrivateKey: "447b028046e46eef3f536ce4d4ee0a618eb3e0bcb2e98f9f2e6458a3ab1bc49a"},
   ];
   insert(dbo, "users", users);
 

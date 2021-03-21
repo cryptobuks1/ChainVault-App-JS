@@ -9,6 +9,7 @@
     "lint": "eslint --fix --config .eslintrc.json \"**/*.js\""
   },
   "dependencies": {
+    "@sushiswap/sdk": "^4.1.1",
     "@uniswap/sdk": "^3.0.3",
     "bcrypt": "^3.0.6",
     "bignumber": "^1.1.0",

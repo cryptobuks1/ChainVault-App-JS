@@ -1,7 +1,6 @@
 //const { wrapper } = require('./module.js');
-const uniswap = require('@uniswap/sdk');
+const sushiswap = require('@sushiswap/sdk');
 const consumable = require('./consumables.js')
-var assert = require('assert');
 
 
 async function swapExactFor(tokenA, tokenB, fromSwap, toSwap, deadline, nonce) {
@@ -20,9 +19,9 @@ async function swapExactFor(tokenA, tokenB, fromSwap, toSwap, deadline, nonce) {
 
   path = [consumable.addresses[tokenA], consumable.addresses[tokenB]];
   tx = { from: consumable.PUBLIC_KEY, to: consumable.ADDRESS_UNI_ROUTER, nonce: nonce };
-  if (tokenA == "ETH"){
-    tx['value'] = fromSwap;
+  if (tokenA == "ETH") {
     tokenA = "WETH";
+    tx['value'] = fromSwap;
     return (await consumable.uniRouterContract.methods.swapExactETHForTokens(toSwap, path,
                                               consumable.PUBLIC_KEY, deadline).send(tx));
   } else if (tokenB == "ETH") {
@@ -51,9 +50,9 @@ async function swapForExact(tokenA, tokenB, fromSwap, toSwap, deadline, nonce) {
 
   path = [consumable.addresses[tokenA], consumable.addresses[tokenB]];
   tx = { from: consumable.PUBLIC_KEY, to: consumable.ADDRESS_UNI_ROUTER, nonce: nonce}
-  if (tokenA == "ETH"){
-    tokenA = "WETH";
+  if (tokenA == "ETH") {
     tx['value'] = fromSwap;
+    tokenA = "WETH";
     // using special method for trading ethereum
     return (await consumable.uniRouterContract.methods.swapETHForExactTokens(toSwap, path,
                                                consumable.PUBLIC_KEY, deadline).send(tx));
@@ -89,6 +88,7 @@ async function addLiquidity(tokenA, tokenB, desiredA, desiredB, minA, minB, dead
   tx = { from: consumable.PUBLIC_KEY, to: consumable.ADDRESS_UNI_ROUTER, nonce: nonce};
   if (tokenA == "ETH") {
     // using special method for posting ethereum
+    tokenA = "WETH";
     tx['value'] = desiredA;
     return (await consumable.uniRouterContract.methods.addLiquidityETH(consumable.addresses[tokenB],
                                                desiredB, minA, minB, consumable.PUBLIC_KEY, deadline).send(tx));
@@ -138,8 +138,8 @@ async function tokenMaker(tokenName, tokenAmount=0) {
   if (tokenName == "ETH") {
     tokenName = "WETH";
   }
-  const token_ = await (new uniswap.Token(uniswap.ChainId[consumable.CHAIN], addresses[tokenName], 18, tokenName));
-  const tokenAmount_ = await (new uniswap.TokenAmount(token_, tokenAmount));
+  const token_ = await (new sushiswap.Token(sushiswap.ChainId[consumable.CHAIN], addresses[tokenName], 18, tokenName));
+  const tokenAmount_ = await (new sushiswap.TokenAmount(token_, tokenAmount));
   return tokenAmount_;
 }
 
@@ -158,7 +158,7 @@ async function pairMaker(tokenA, tokenB, amountA, amountB) {
   assert(tokenB != "WETH", "tokenB must not be ETH");
   const tokenA_ = await tokenMaker(tokenA, amountA);
   const tokenB_ = await tokenMaker(tokenB, amountB);
-  const pair = await (new uniswap.Pair(tokenA_, tokenB_));
+  const pair = await (new sushiswap.Pair(tokenA_, tokenB_));
   return pair;
 }
 
@@ -176,7 +176,7 @@ async function routeToLP(tokenA, tokenB, amountA, amountB) {
   }
   pair = await pairMaker(tokenA, tokenB, amountA, amountB);
   const address = pair.liquidityToken.address;
-  console.log(`The path to the ${tokenA}-${tokenB} LP on uniswap is ${address}`);
+  console.log(`The path to the ${tokenA}-${tokenB} LP on sushiswap is ${address}`);
   return String(address);
 }
 
@@ -194,10 +194,10 @@ async function price(tokenA, tokenB) {
   }
   const tokenA_ = (await tokenMaker(tokenA, 0)).token;
   const tokenB_ = (await tokenMaker(tokenB, 0)).token;
-  const pair = await(new uniswap.Fetcher.fetchPairData(tokenA_, tokenB_));
-  const route = await(new uniswap.Route([pair], tokenA_));
+  const pair = await(new sushiswap.Fetcher.fetchPairData(tokenA_, tokenB_));
+  const route = await(new sushiswap.Route([pair], tokenA_));
   const price_ = await route.midPrice.toSignificant(6);
-  console.log(`The price of ${tokenA} in ${tokenB} on uniswap is ${price_} `);
+  console.log(`The price of ${tokenA} in ${tokenB} on sushiswap is ${price_} `);
   return price_;
 }
 
@@ -220,10 +220,11 @@ async function trade(tokenA, tokenB, amountA, amountB, type) {
   }
   const pair = await pairMaker(tokenA, tokenB, amountA, amountB);
   const tokenA_ = await tokenMaker(tokenA, amountA);
-  const route = new uniswap.Route([pair], tokenA_.token);
-  const trade = new uniswap.Trade(route, tokenA_, type)
+  const route = new sushiswap.Route([pair], tokenA_.token);
+  const trade = new sushiswap.Trade(route, tokenA_, type)
   return (await trade);
 }
+
 
 module.exports.swapExactFor = swapExactFor;
 module.exports.swapForExact = swapForExact;

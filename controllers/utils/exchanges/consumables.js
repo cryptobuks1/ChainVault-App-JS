@@ -33,7 +33,7 @@ const ADDRESS_ETHUNI_UNILP = "0x3D8051F7c057d1b77b27D8DbBE638EAff0359EAa";
 const ethUniContract = new web3.eth.Contract(ercContract.abi, ADDRESS_ETHUNI_UNILP); // DAI contract
 
 addresses = {"DAI": ADDRESS_DAI, "MKR": ADDRESS_MKR,  "UNI": ADDRESS_UNI,
-             "ETH": ADDRESS_WETH, "ETH-DAI_UNILP": ADDRESS_ETHDAI_UNILP, "DAI-MKR_UNILP": ADDRESS_DAIMKR_UNILP};
+             "WETH": ADDRESS_WETH, "ETH-DAI_UNILP": ADDRESS_ETHDAI_UNILP, "DAI-MKR_UNILP": ADDRESS_DAIMKR_UNILP};
 
 module.exports.MNEMONIC = process.env.MNEMONIC;
 module.exports.PUBLIC_KEY = process.env.PUBLIC_KEY;

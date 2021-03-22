@@ -3,8 +3,6 @@ const apiResponse = require("../helpers/apiResponse");
 const dexUtils = require("./utils/dexUtils.js")
 const consumable = require('./utils/exchanges/consumables.js')
 
-//const TokenModel = require("../models/TokenModel");
-//const ContractModel = require("../models/ContractModel");
 const { body,validationResult } = require("express-validator");
 
 /**

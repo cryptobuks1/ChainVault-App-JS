@@ -1,3 +1,5 @@
+require("dotenv").config();
+const CHAIN = process.env.CHAIN;
 const UserModel = require("../../models/UserModel");
 const TokenModel = require("../../models/TokenModel");
 
@@ -20,12 +22,18 @@ const web3 = new Web3(provider);
 // get coin decimals
 var tokenInfo;
 var loadTokens = async function() {
-    var tokenInfo = {};
-    var tokens = await TokenModel.find();
-    for (var token of tokens) {
-        tokenInfo[token.name] = {"decimal": token.decimal, "address": token.address}
+    var tokens = {};
+    const tokensData = (await TokenModel.find());
+    const ercContract = require("../../contracts/IERC20.json"); // eth abi
+    for (var token of tokensData) {
+      if (token[CHAIN] != "0x0"){
+        tokens[token.name] = { "decimal": token.decimal, "address": token[CHAIN], "contract": new web3.eth.Contract(ercContract.abi, token[CHAIN]) };
+      } else{
+        var entry = { "decimal": token.decimal, "address": token[CHAIN], "contract": "" };
+        tokens[token.name] = entry;//{ "decimal": String(token.decimal), "address": token[CHAIN], "contract": "" };
+      }
     }
-    return tokenInfo;
+    return tokens;
 }
 loadTokens().then((info) => {
     tokenInfo = info
@@ -58,6 +66,9 @@ exports.getBalances = async function(user) {
             let address = tokenInfo[token]["address"];;
             // TODO: save
             console.log(address);
+            if (address == "0x0") {
+              continue;
+            }
             let tokenInst = new web3.eth.Contract(IERC20, address);
             let balance = await tokenInst.methods.balanceOf(walletAddress).call();
             balance /= Math.pow(10, tokenInfo[token]["decimal"]);

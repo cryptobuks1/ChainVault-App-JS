@@ -17,7 +17,7 @@ async function getPath(tokenA, tokenB) {
   } else if (tokenB == "ETH") {
     tokenB = "WETH";
   }
-  return [consumable.addresses[tokenA], consumable.addresses[tokenB]];
+  return [consumable.tokens[tokenA].address, consumable.tokens[tokenB].address];
 }
 
 async function swapExactFor(tokenA, tokenB, fromSwap, toSwap, deadline, nonce) {
@@ -107,12 +107,12 @@ async function addLiquidity(tokenA, tokenB, desiredA, desiredB, minA, minB, dead
     // using special method for posting ethereum
     tokenA = "WETH";
     tx['value'] = desiredA;
-    return (await consumable.uniRouterContract.methods.addLiquidityETH(consumable.addresses[tokenB],
+    return (await consumable.uniRouterContract.methods.addLiquidityETH(consumable.tokens[tokenB].address,
                                                desiredB, minA, minB, consumable.PUBLIC_KEY, deadline).send(tx));
   } else {
     // using other method
-    return (await consumable.uniRouterContract.methods.addLiquidity(consumable.addresses[tokenA],
-                                               consumable.addresses[tokenB], desiredA, desiredB, minA, minB,
+    return (await consumable.uniRouterContract.methods.addLiquidity(consumable.tokens[tokenA].address,
+                                               consumable.tokens[tokenB].address, desiredA, desiredB, minA, minB,
                                                consumable.PUBLIC_KEY, deadline).send(tx));
   }
 }
@@ -136,10 +136,10 @@ async function removeLiquidity(tokenA, tokenB, liquidity, minA, minB, deadline, 
   path = (await getPath(tokenA, tokenB));
   if (tokenA == "ETH") {
     tokenA = "WETH";
-    return (await consumable.uniRouterContract.methods.removeLiquidityETH(addresses[tokenB], liquidity,
+    return (await consumable.uniRouterContract.methods.removeLiquidityETH(consumable.tokens[tokenB].address, liquidity,
                   minA, minB, consumable.PUBLIC_KEY, deadline).send(tx));
   } else {
-    return (await consumable.uniRouterContract.methods.removeLiquidity(addresses[tokenA], addresses[tokenB],
+    return (await consumable.uniRouterContract.methods.removeLiquidity(consumable.tokens[tokenA].address, consumable.tokens[tokenB].address,
                   liquidity, minA, minB, consumable.PUBLIC_KEY, deadline).send(tx));
   }
 }
@@ -155,7 +155,7 @@ async function tokenMaker(tokenName, tokenAmount=0) {
   if (tokenName == "ETH") {
     tokenName = "WETH";
   }
-  const token_ = await (new sushiswap.Token(sushiswap.ChainId[consumable.CHAIN], addresses[tokenName], 18, tokenName));
+  const token_ = await (new sushiswap.Token(sushiswap.ChainId[consumable.CHAIN], consumable.tokens[tokenName].address, 18, tokenName));
   const tokenAmount_ = await (new sushiswap.TokenAmount(token_, tokenAmount));
   return tokenAmount_;
 }

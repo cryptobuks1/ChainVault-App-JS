@@ -1,5 +1,6 @@
 const TokenModel = require("../models/TokenModel");
 const compoundUtils = require("./utils/rates/compound");
+const aaveUtils = require("./utils/rates/aave");
 
 const { body,validationResult } = require("express-validator");
 const { sanitizeBody } = require("express-validator");
@@ -241,7 +242,7 @@ mongoose.set("useFindAndModify", false);
             if (req.body.tokenName == "ETH") {
                 result = await compoundUtils.repayETH(req.user, req.body.amount);
             } else {
-                //
+                result = await compoundUtils.repayERC20(req.user, req.body.tokenName, req.body.amount);
             }
 			if(Object.keys(result).length > 0){
 				return apiResponse.successResponseWithData(res, "Operation success", { "success" : result });

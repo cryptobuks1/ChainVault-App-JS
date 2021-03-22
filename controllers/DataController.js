@@ -14,9 +14,9 @@ function TokenData(data) {
 	this.name = data.name;
   this.description = data.description;
 	this.MAINNET = data.MAINNET;
-  this.KOVAN = data.KOVAN;
-  this.RINKEBY = data.RINKEBY;
-  this.decimal = data.decimal;
+	this.KOVAN = data.KOVAN;
+	this.RINKEBY = data.RINKEBY;
+	this.decimal = data.decimal;
 }
 
 /**
@@ -43,8 +43,8 @@ function TokenData(data) {
 			const errors = validationResult(req);
 			var token = new TokenModel(
 				{ name: req.body.name,
-				  address: req.body.address}
-            );
+					address: req.body.address}
+						);
 			if (!errors.isEmpty()) {
 				return apiResponse.validationErrorWithData(res, "Validation Error.", errors.array());
 			}

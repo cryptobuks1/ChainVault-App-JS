@@ -3,6 +3,7 @@ const CHAIN = process.env.CHAIN;
 
 const UserModel = require('../../../models/UserModel');
 const TokenModel = require('../../../models/TokenModel');
+const ContractModel = require('../../../models/ContractModel');
 
 const HDWalletProvider = require('truffle-hdwallet-provider');
 const Web3 = require('web3');
@@ -17,7 +18,7 @@ const infuraURI = "https://rinkeby.infura.io/v3/eb8d27a5b3d24313b6d8a13e56464ce3
 //IERC20 = JSON.parse(IERC20).abi;
 
 const ethDecimals = 18; // Ethereum has 18 decimal places
-const underlyingDecimals = 18; // TODO: works for DAI at least
+const compoundCoins = ["DAI","USDC","BAT","ETH","USDT","ZRX"];
 
 // get coin decimals
 var tokenInfo;
@@ -60,7 +61,7 @@ exports.lendETH = async function(user, amount) {
 
     console.log('Supplying ETH to the Compound Protocol...', '\n');
     // Mint some cETH by supplying ETH to the Compound Protocol
-    await cEthContract.methods.mint().send({
+    var txn = await cEthContract.methods.mint().send({
         from: walletAddress,
         gasLimit: web3.utils.toHex(150000),
         gasPrice: web3.utils.toHex(20000000000), // use ethgasstation.info (mainnet only)
@@ -77,7 +78,7 @@ exports.lendETH = async function(user, amount) {
     let cTokenBalance = await cEthContract.methods.balanceOf(walletAddress).call() / 1e8;
 
     console.log("My wallet's cETH Token Balance:", cTokenBalance, '\n');
-    return {cETH: cTokenBalance, supplyRate: supplyRate};
+    return {cETH: cTokenBalance, supplyRate: supplyRate, txn: txn};
 }
 
 exports.redeemETH = async function(user, amount) {
@@ -99,7 +100,7 @@ exports.redeemETH = async function(user, amount) {
     console.log('Redeeming the cETH for ETH...', '\n');
 
     console.log('Exchanging all cETH based on cToken amount...', '\n');
-    await cEthContract.methods.redeem(amount * 1e8).send({
+    var txn = await cEthContract.methods.redeem(amount * 1e8).send({
       from: walletAddress,
       gasLimit: web3.utils.toHex(500000),
       gasPrice: web3.utils.toHex(20000000000), // use ethgasstation.info (mainnet only)
@@ -112,7 +113,7 @@ exports.redeemETH = async function(user, amount) {
     console.log("My wallet's ETH balance:", finalEthBalance, '\n');
     let ethCreated = (finalEthBalance - currEthBalance);
 
-    return ethCreated;
+    return {ethCreated: ethCreated, txn: txn};
 }
 
 exports.lendERC20 = async function(user, tokenName, amount) {
@@ -126,6 +127,7 @@ exports.lendERC20 = async function(user, tokenName, amount) {
     var cTokenName = "c"+tokenName;
     var token = await TokenModel.findOne({name: tokenName});
     var cToken = await TokenModel.findOne({name: cTokenName});
+    const underlyingDecimals = token.decimal;
 
     amount = amount * Math.pow(10, underlyingDecimals)
 
@@ -149,7 +151,7 @@ exports.lendERC20 = async function(user, tokenName, amount) {
     console.log(`Supplying ${tokenName} to the Compound Protocol...`, '\n');
 
     // Mint cTokens by supplying underlying tokens to the Compound Protocol
-    await cTokenContract.methods.mint(
+    var txn = await cTokenContract.methods.mint(
         web3.utils.toBN(amount.toString())
     ).send({from: walletAddress});
 
@@ -168,7 +170,7 @@ exports.lendERC20 = async function(user, tokenName, amount) {
     underlyingBalance = underlyingBalance / Math.pow(10, underlyingDecimals);
     console.log(`My wallet's ${tokenName} Token Balance:`, underlyingBalance, '\n');
 
-    return {[cTokenName]: cTokenBalance, supplyRate: supplyRate}
+    return {[cTokenName]: cTokenBalance, supplyRate: supplyRate, txn: txn}
 }
 
 exports.redeemERC20 = async function(user, tokenName, amount) {
@@ -184,43 +186,32 @@ exports.redeemERC20 = async function(user, tokenName, amount) {
     var cToken = await TokenModel.findOne({name: cTokenName});
     const cTokenContractAddress = cToken[CHAIN];
     const cTokenContract = new web3.eth.Contract(cErcAbi, cTokenContractAddress);
+    const underlyingDecimals = token.decimal;
 
     // Mainnet Contract for the underlying token https://etherscan.io/address/0x6b175474e89094c44da98b954eedeac495271d0f
     // When using cDAI, give your local test net wallet some DAI using `node seed-account-with-erc20/dai.js`
     const underlyingContractAddress = token[CHAIN];
     const underlyingContract = new web3.eth.Contract(erc20Abi, underlyingContractAddress);
 
-    let currUnderlyingBalance = await underlyingContract.methods.balanceOf(walletAddress).call();
-    currUnderlyingBalance = currUnderlyingBalance / Math.pow(10, underlyingDecimals);
+    let currWalletBalance = await underlyingContract.methods.balanceOf(walletAddress).call();
+    currWalletBalance = currWalletBalance / Math.pow(10, underlyingDecimals);
 
     let erCurrent = await cTokenContract.methods.exchangeRateCurrent().call();
     let exchangeRate = erCurrent / Math.pow(10, 18 + underlyingDecimals - 8);
     console.log(`Current exchange rate from c${tokenName} to ${tokenName}:`, exchangeRate, '\n');
-
     console.log(`Redeeming the c${tokenName} for ${tokenName}...`);
 
-    // redeem (based on cTokens)
-
-    console.log(`Exchanging all c${tokenName} based on cToken amount...`, '\n');
-    await cTokenContract.methods.redeem(amount * 1e8).send({ from: walletAddress });
-
     // redeem (based on underlying)
-    // console.log(`Exchanging all c${assetName} based on underlying ${assetName} amount...`);
-    // let underlyingAmount = balanceOfUnderlying * Math.pow(10, underlyingDecimals);
-    // await cTokenContract.methods.redeemUnderlying(underlyingAmount).send(fromMyWallet);
-    console.log("ASDA");
+    console.log(`Exchanging all c${tokenName} based on underlying ${tokenName} amount...`);
+    let underlyingAmount = web3.utils.toBN(amount * Math.pow(10, underlyingDecimals));
+    var txn = await cTokenContract.methods.redeemUnderlying(underlyingAmount).send({ from: walletAddress });
 
-    cTokenBalance = await cTokenContract.methods.balanceOf(walletAddress).call();
-    console.log("ASDA");
-    cTokenBalance = cTokenBalance / 1e8;
-    console.log(`My wallet's c${tokenName} Token Balance:`, cTokenBalance);
+    let finalWalletBalance = await underlyingContract.methods.balanceOf(walletAddress).call();
+    finalWalletBalance = finalWalletBalance / Math.pow(10, underlyingDecimals);
+    console.log(`My wallet's ${tokenName} Token Balance:`, finalWalletBalance, '\n');
 
-    let finalUnderlyingBalance = await underlyingContract.methods.balanceOf(walletAddress).call();
-    finalUnderlyingBalance = finalUnderlyingBalance / Math.pow(10, underlyingDecimals);
-    console.log(`My wallet's ${tokenName} Token Balance:`, finalUnderlyingBalance, '\n');
-
-    let tokenCreated = finalUnderlyingBalance - currUnderlyingBalance;
-    return tokenCreated;
+    let tokenCreated = finalWalletBalance - currWalletBalance;
+    return { tokenCreated: tokenCreated, txn: txn};
 }
 
 const {
@@ -233,9 +224,10 @@ const {
 
 const logBalances = (tokenName, web3, cToken, underlying, walletAddress) => {
     return new Promise(async (resolve, reject) => {
+      let tokenObj = await TokenModel.findOne({ name: tokenName });
       let myWalletEthBalance = +web3.utils.fromWei(await web3.eth.getBalance(walletAddress));
       let myWalletCTokenBalance = await cToken.methods.balanceOf(walletAddress).call() / 1e8;
-      let myWalletUnderlyingBalance = +await underlying.methods.balanceOf(walletAddress).call() / 1e18;
+      let myWalletUnderlyingBalance = +await underlying.methods.balanceOf(walletAddress).call() / Math.pow(10, tokenObj.decimal);
 
       console.log(`My Wallet's  ETH Balance:`, myWalletEthBalance);
       console.log(`My Wallet's c${tokenName} Balance:`, myWalletCTokenBalance);
@@ -247,41 +239,48 @@ const logBalances = (tokenName, web3, cToken, underlying, walletAddress) => {
 
 // TODO: make cleaner. amount = 0 means no mint, just supply.
 // TODO: should I get rid of the creation feature?
-exports.supplyCollateral = async function(user, tokenName, amount, verbose=false) {
+exports.supplyCollateral = async function(user, tokenNames, amounts) {
 
-    const comptrollerAddress = "0x2eaa9d77ae4d8f9cdd9faacd44016e746485bddb";
+    const compContract = await ContractModel.findOne({ name: "COMP_COMPTROLLER" });
+    const comptrollerAddress = compContract[CHAIN];
     const walletAddress = user.localAddress;
     const userSearch = await UserModel.findOne({email: user.email});
     const privateKey = userSearch.localPrivateKey;
     const provider = new HDWalletProvider(privateKey, infuraURI);
     const web3 = new Web3(provider);
     const comptroller = new web3.eth.Contract(comptrollerAbi, comptrollerAddress);
+    
+    var cTokensAddresses = [];
+    for (i = 0; i < tokenNames.length; i++) {
+        let tokenName = tokenNames[i];
+        let amount = amounts[i];
 
-    var cTokenObj = await TokenModel.findOne({name: "c"+tokenName});
-    const cTokenAddress = cTokenObj[CHAIN];
-    const cTokenName = cTokenObj.name;
+        var cTokenObj = await TokenModel.findOne({name: "c"+tokenName});
+        const cTokenAddress = cTokenObj[CHAIN];
+        cTokensAddresses.push(cTokenAddress);
 
-    var cTokenAmount;
-    if (amount > 0) {
-        if (tokenName == "ETH") {
-            cTokenAmount = await this.lendETH(user, amount);
-        } else {
-            cTokenAmount = await this.lendERC20(user, tokenName, amount);
+        var cTokenAmount;
+        if (amount > 0) {
+            if (tokenName == "ETH") {
+                cTokenAmount = await this.lendETH(user, amount);
+            } else {
+                cTokenAmount = await this.lendERC20(user, tokenName, amount);
+            }
         }
     }
 
     console.log('\nEntering market (via Comptroller contract) for ETH (as collateral)...');
-    let markets = [cTokenAddress]; // This is the cToken contract(s) for your collateral
+    let markets = cTokensAddresses; // This is the cToken contract(s) for your collateral
     let enterMarkets = await comptroller.methods.enterMarkets(markets).send({ from: walletAddress });
 
-    if (verbose) {
-        var collat = await this.collateral(user);
-        return collat;
-    }
+    var collat = await this.collateral(user);
+    return { collat: collat, txn: enterMarkets };
 }
 
-exports.removeCollateral = async function(user, tokenNames, verbose=false) {
-    const comptrollerAddress = "0x2eaa9d77ae4d8f9cdd9faacd44016e746485bddb";
+exports.removeCollateral = async function(user, tokenNames) {
+
+    const compContract = await ContractModel.findOne({ name: "COMP_COMPTROLLER" });
+    const comptrollerAddress = compContract[CHAIN];
     const walletAddress = user.localAddress;
     const userSearch = await UserModel.findOne({email: user.email});
     const privateKey = userSearch.localPrivateKey;
@@ -289,28 +288,27 @@ exports.removeCollateral = async function(user, tokenNames, verbose=false) {
     const web3 = new Web3(provider);
     const comptroller = new web3.eth.Contract(comptrollerAbi, comptrollerAddress);
 
+    var txns = []
     for (var tokenName of tokenNames) {
         var cTokenObj = await TokenModel.findOne({name: "c"+tokenName});
         const cTokenAddress = cTokenObj[CHAIN];
         const cTokenName = cTokenObj.name;
 
         console.log('\Exiting market (via Comptroller contract) for ETH (as collateral)...');
-        console.log(tokenName);
-        console.log(cTokenAddress);
         let exitMarket = await comptroller.methods.exitMarket(cTokenAddress).send({ from: walletAddress });
+        txns.push(exitMarket);
     }
 
-    if (verbose) {
-        var collat = this.collateral(user);
-        return collat;
-    }
+    var collat = await this.collateral(user);
+    return { collat: collat, txn: txns };
 }
 
 // List the liquidty. TODO: get the tokens used as collateral.
 // List markets in
 exports.collateral = async function(user) {
 
-    const comptrollerAddress = "0x2eaa9d77ae4d8f9cdd9faacd44016e746485bddb";
+    const compContract = await ContractModel.findOne({ name: "COMP_COMPTROLLER" });
+    const comptrollerAddress = compContract[CHAIN];
     const walletAddress = user.localAddress;
     const userSearch = await UserModel.findOne({email: user.email});
     const privateKey = userSearch.localPrivateKey;
@@ -324,7 +322,10 @@ exports.collateral = async function(user) {
     var cFactors = [];
     for (let cTokenAddress of markets) {
         let {1:collateralFactor} = await comptroller.methods.markets(cTokenAddress).call();
-        collateralFactor = (collateralFactor / Math.pow(10, underlyingDecimals)) * 100; // Convert to percent
+        // get token object from cTokenAddress
+        const cTokenObj = await TokenModel.findOne({ [CHAIN]: cTokenAddress });
+        const tokenObj = await TokenModel.findOne({ name: cTokenObj.name.substring(1) });
+        collateralFactor = (collateralFactor / Math.pow(10, tokenObj.decimal)) * 100; // Convert to percent
         cFactors.push(collateralFactor);
     }
 
@@ -342,8 +343,8 @@ exports.borrowETH = async function(user, amount) {
     const privateKey = userSearch.localPrivateKey;
     const provider = new HDWalletProvider(privateKey, infuraURI);
     const web3 = new Web3(provider);
-    const cEthAddress = '0xd6801a1dffcd0a410336ef88def4320d6df1883e';
-    const cEth = new web3.eth.Contract(cEthAbi, cEthAddress);
+    const cETH = await TokenModel.findOne({ name: "cETH" });
+    const cEth = new web3.eth.Contract(cEthAbi, cETH[CHAIN]);
 
     console.log('Fetching borrow rate per block for ETH borrowing...');
     let borrowRate = await cEth.methods.borrowRatePerBlock().call();
@@ -370,7 +371,7 @@ exports.borrowETH = async function(user, amount) {
       );
     }
     var balances = await this.borrowBalances(user);
-    return {"balances": balances, borrowRate: borrowRate}
+    return {"balances": balances, borrowRate: borrowRate, txn: borrowResult };
 }
 
 exports.borrowBalances = async function(user) {
@@ -385,17 +386,17 @@ exports.borrowBalances = async function(user) {
     var balances = {}
     for (var tokenName of tokenNames) {
         if ((tokenName[0] != "c") && (compoundCoins.includes(tokenName))) {
-            const tokenObj = await TokenModel.findOne({name: "c"+tokenName});
+            const cTokenObj = await TokenModel.findOne({name: "c"+tokenName});
+            const tokenObj = await TokenModel.findOne({ name: tokenName});
             var cToken;
-
             if (tokenName == "ETH") {
-                cToken = new web3.eth.Contract(cEthAbi, tokenObj[CHAIN]);
+                cToken = new web3.eth.Contract(cEthAbi, cTokenObj[CHAIN]);
             } else {
-                cToken = new web3.eth.Contract(cErcAbi, tokenObj[CHAIN]);
+                cToken = new web3.eth.Contract(cErcAbi, cTokenObj[CHAIN]);
             }
             console.log('\nFetching your borrow balance from contract...');
             let balance = await cToken.methods.borrowBalanceCurrent(walletAddress).call();
-            balance = balance / 1e18; // because DAI is a 1e18 scaled token.
+            balance = balance / Math.pow(10, tokenObj.decimal); // because DAI is a 1e18 scaled token.
             balances[tokenName] = balance;
         }
     }
@@ -410,8 +411,8 @@ exports.repayETH = async function(user, amount) {
     const privateKey = userSearch.localPrivateKey;
     const provider = new HDWalletProvider(privateKey, infuraURI);
     const web3 = new Web3(provider);
-    const cEthAddress = '0xd6801a1dffcd0a410336ef88def4320d6df1883e';
-    const cEth = new web3.eth.Contract(cEthAbi, cEthAddress);
+    const cETH = await TokenModel.findOne({ name: "cETH" });
+    const cEth = new web3.eth.Contract(cEthAbi, cETH[CHAIN]);
 
     const repayBorrow = await cEth.methods.repayBorrow().send({
         from: walletAddress,
@@ -426,7 +427,7 @@ exports.repayETH = async function(user, amount) {
         process.exit(1);
     }
     var balances = await this.borrowBalances(user);
-    return balances;
+    return { balances: balances, txn: repayBorrow };
 }
 
 exports.borrowERC20 = async function(user, tokenName, amount) {
@@ -436,13 +437,12 @@ exports.borrowERC20 = async function(user, tokenName, amount) {
     const privateKey = userSearch.localPrivateKey;
     const provider = new HDWalletProvider(privateKey, infuraURI);
     const web3 = new Web3(provider);
-    const cEthAddress = '0xd6801a1dffcd0a410336ef88def4320d6df1883e';
-    const cEth = new web3.eth.Contract(cEthAbi, cEthAddress);
 
     var cTokenName = "c"+tokenName;
     var token = await TokenModel.findOne({name: tokenName});
     var cToken = await TokenModel.findOne({name: cTokenName});
     const cTokenContract = new web3.eth.Contract(cErcAbi, cToken[CHAIN]);
+    const underlyingDecimals = token.decimal;
 
     console.log(`Fetching borrow rate per block for ${tokenName} borrowing...`);
     let borrowRate = await cTokenContract.methods.borrowRatePerBlock().call();
@@ -450,11 +450,11 @@ exports.borrowERC20 = async function(user, tokenName, amount) {
     
     console.log(`Now attempting to borrow ${amount} ${tokenName}...`);
     const scaledUpBorrowAmount = (amount * Math.pow(10, underlyingDecimals)).toString();
-    const trx = await cTokenContract.methods.borrow(scaledUpBorrowAmount).send({ from: walletAddress });
-    console.log("Borrow transaction", trx);
+    const txn = await cTokenContract.methods.borrow(scaledUpBorrowAmount).send({ from: walletAddress });
+    console.log("Borrow transaction", txn);
 
     var balances = await this.borrowBalances(user);
-    return {"balances": balances, borrowRate: borrowRate};
+    return {"balances": balances, borrowRate: borrowRate, txn: txn };
 }
 
 exports.repayERC20 = async function(user, tokenName, amount) {
@@ -470,6 +470,7 @@ exports.repayERC20 = async function(user, tokenName, amount) {
     var tokenAddress = token[CHAIN];
     const underlying = new web3.eth.Contract(erc20Abi, tokenAddress);
     const cTokenContract = new web3.eth.Contract(cErcAbi, cTokenAddress);
+    const underlyingDecimals = token.decimal;
 
     console.log(`Approving ${tokenName} to be transferred from your wallet to the c${tokenName} contract...`);
     const underlyingToRepay = (amount * Math.pow(10, underlyingDecimals)).toString();
@@ -484,5 +485,5 @@ exports.repayERC20 = async function(user, tokenName, amount) {
     }
 
     var balances = await this.borrowBalances(user);
-    return balances;
+    return { balances: balances, txn: repayBorrow };
 }

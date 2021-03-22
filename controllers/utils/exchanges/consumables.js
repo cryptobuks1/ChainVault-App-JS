@@ -39,7 +39,7 @@ async function main() {
   const tokensData = (await TokenModel.find());
   for (var token of tokensData) {
     if (token[CHAIN] != "0x0") {
-      tokens[token.name] = { "decimal": token.decimal, "address": token[CHAIN], "contract": new web3.eth.Contract(ercContract.abi, token[CHAIN]) };
+      tokens[token.name] = { "decimal": token.decimal, "address": token[CHAIN], "contract": new web3.eth.Contract(ercContract, token[CHAIN]) };
     } else {
       tokens[token.name] = { "decimal": token.decimal, "address": token[CHAIN], "contract": "" };
     }

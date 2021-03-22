@@ -2,8 +2,65 @@
 const apiResponse = require("../helpers/apiResponse");
 const dexUtils = require("./utils/dexUtils.js")
 const consumable = require('./utils/exchanges/consumables.js')
+const utils = require('./utils/utils.js');
 
 const { body,validationResult } = require("express-validator");
+const auth = require("../middlewares/jwt");
+
+async function swapInfo(exchange, tokenA, tokenB, prevA, prevB, user) {
+
+  /**
+   * @param {string} exchange is what platform to tx on
+   * @param {string} tokenA is token to sell
+   * @param {string} tokenB is token to buy
+   * @param {int} prevA is amount before trade
+   * @param {int} prevB is amount before trade
+   * @param {int} user is user making trade
+   *
+   * @returns {Object}
+  **/
+
+  var newA = (await utils.getBalance(user, tokenA))[tokenA];
+  var newB = (await utils.getBalance(user, tokenB))[tokenB];
+  const priceA_ = (await dexUtils.midPrice(exchange, tokenA, "DAI"));
+  const priceB_ = (await dexUtils.midPrice(exchange, tokenB, "DAI"));
+  var tradeInfo = {}
+  tradeInfo[tokenA.concat('_trade')] = newA - prevA;
+  tradeInfo[tokenB.concat('_trade')] = newB - prevB;
+  tradeInfo[tokenA.concat('_price')] = priceA_;
+  tradeInfo[tokenB.concat('_price')] = priceB_;
+
+  return tradeInfo;
+}
+
+async function lpinfo(exchange, tokenA, tokenB, prevA, prevB, prevlp, user) {
+
+  /**
+   * @param {string} exchange is what platform to tx on
+   * @param {string} tokenA is token to sell
+   * @param {string} tokenB is token to buy
+   * @param {int} prevA is amount before trade
+   * @param {int} prevB is amount before trade
+   * @param {int} user is user making trade
+   *
+   * @returns {Object}
+  **/
+
+  var newA = (await utils.getBalance(user, tokenA))[tokenA];
+  var newB = (await utils.getBalance(user, tokenB))[tokenB];
+  const priceA_ = (await dexUtils.midPrice(exchange, tokenA, "DAI"));
+  const priceB_ = (await dexUtils.midPrice(exchange, tokenB, "DAI"));
+  const lpName = tokenA.concat('_').concat(tokenB).concat('_').concat(exchange);
+  var tradeInfo = {}
+  tradeInfo[tokenA.concat('_trade')] = newA - prevA;
+  tradeInfo[tokenB.concat('_trade')] = newB - prevB;
+  tradeInfo[tokenA.concat('_price')] = priceA_;
+  tradeInfo[tokenB.concat('_price')] = priceB_;
+  tradeInfo[lpName.concat('_trade')] = 0;
+  tradeInfo[lpName.concat('_price')] = 0;
+
+  return tradeInfo;
+}
 
 /**
  * Price on an exchange
@@ -76,19 +133,45 @@ exports.LPaddress = [
 ];
 
 /**
+ * approveToken - approve token on target exchange
+ *
+ * @returns {Object}, result of token approval call
+ */
+
+exports.approveTransfer = [
+  auth,
+  body("exchange").isLength({ min: 1 }).trim().withMessage("exchange must be specified."),
+  body("token").isLength({ min: 1 }).trim().withMessage("token must be specified."),
+  body("amount").isLength({ min: 1 }).trim().withMessage("amount must be specified."),
+  async (req, res) => {
+    if (req.body.exchange == "uniswap") {
+      output = (await utils.approveTransfer(req.user, consumable.contracts["UNI_ROUTER"].address, req.body.token, req.body.amount));
+      return apiResponse.successResponseWithData(res, "Operation success", output);
+    } else if (req.body.exchange == "sushiswap") {
+      output = (await utils.approveTransfer(req.user, consumable.contracts["SUSHI_ROUTER"].address, req.body.token, req.body.amount));
+      return apiResponse.successResponseWithData(res, "Operation success", output);
+    }
+    else{
+      return apiResponse.ErrorResponse(res, err);
+    }
+  }
+];
+
+/**
  * swapExactFor - Swap an exact amount of tokenA for tokenB
  *
  * @returns {Object}, result of lp removal call
  */
 
 exports.swapExactFor = [
+  auth,
   body("exchange").isLength({ min: 1 }).trim().withMessage("exchange must be specified."),
   body("tokenA").isLength({ min: 1 }).trim().withMessage("tokenA must be specified."),
   body("tokenB").isLength({ min: 1 }).trim().withMessage("tokenB must be specified."),
   body("sellAmount").isLength({ min: 1 }).trim().withMessage("sellAmount must be specified."),
   body("maxSlippage").isLength({ min: 1 }).trim().withMessage("maxSlippage must be specified."),
   async (req, res) => {
-    try {
+    //try {
      // TODO: How do we treat units, is it best to do it downstream >>> Do we assume everything is based on the 18 decimal system ?
      const exchange = String(req.body.exchange);
      const tokenA = String(req.body.tokenA);
@@ -96,15 +179,19 @@ exports.swapExactFor = [
      const sellAmount = String(req.body.sellAmount);
      const maxSlippage = String(req.body.maxSlippage);
      const deadline = Math.floor(Date.now() / 1000) + 60 * 20; // 20 minutes from the current Unix time
-     const nonce =  (await consumable.web3.eth.getTransactionCount(consumable.PUBLIC_KEY, "latest")); // get latest nonce
-     console.log(`exchange=${exchange}, tokenA=${tokenA}, tokenB=${tokenB}, buyAmount=${sellAmount}, maxSlippage=${maxSlippage}, deadline=${deadline}, nonce=${nonce}`);
-     result = (await dexUtils.swapExactFor(exchange, tokenA, tokenB, sellAmount, maxSlippage, deadline, nonce));
-     return apiResponse.successResponseWithData(res, "Operation success", result);
-    } catch (err) {
+     var prevA = (await utils.getBalance(req.user, tokenA))[tokenA];
+     var prevB = (await utils.getBalance(req.user, tokenB))[tokenB];
+
+     console.log(`exchange=${exchange}, tokenA=${tokenA}, tokenB=${tokenB}, buyAmount=${sellAmount}, maxSlippage=${maxSlippage}, deadline=${deadline}`);
+     var output = (await dexUtils.swapExactFor(req.user, exchange, tokenA, tokenB, sellAmount, maxSlippage, deadline));
+     output["tradeInfo"] = (await swapInfo(exchange, tokenA, tokenB, prevA, prevB, req.user));
+     return apiResponse.successResponseWithData(res, "Operation success", output);
+    //} catch (err) {
      //throw error in json response with status 500.
+     console.log("Failed with error=",err);
      return apiResponse.ErrorResponse(res, err);
-    }
- }
+    //}
+  }
 ];
 
 /**
@@ -114,13 +201,14 @@ exports.swapExactFor = [
  */
 
 exports.swapForExact = [
+  auth,
   body("exchange").isLength({ min: 1 }).trim().withMessage("exchange must be specified."),
   body("tokenA").isLength({ min: 1 }).trim().withMessage("tokenA must be specified."),
   body("tokenB").isLength({ min: 1 }).trim().withMessage("tokenB must be specified."),
   body("buyAmount").isLength({ min: 1 }).trim().withMessage("buyAmount must be specified."),
   body("maxSlippage").isLength({ min: 1 }).trim().withMessage("maxSlippage must be specified."),
   async (req, res) => {
-    try {
+    //try {
      // TODO: How do we treat units, is it best to do it downstream >>> Do we assume everything is based on the 18 decimal system ?
      const exchange = String(req.body.exchange);
      const tokenA = String(req.body.tokenA);
@@ -128,15 +216,18 @@ exports.swapForExact = [
      const buyAmount = String(req.body.buyAmount);
      const maxSlippage = String(req.body.maxSlippage);
      const deadline = Math.floor(Date.now() / 1000) + 60 * 20; // 20 minutes from the current Unix time
-     const nonce =  (await consumable.web3.eth.getTransactionCount(consumable.PUBLIC_KEY, "latest")); // get latest nonce
-     console.log(`exchange=${exchange}, tokenA=${tokenA}, tokenB=${tokenB}, buyAmount=${buyAmount}, maxSlippage=${maxSlippage}, deadline=${deadline}, nonce=${nonce}`);
-     result = (await dexUtils.swapForExact(exchange, tokenA, tokenB, buyAmount, maxSlippage, deadline, nonce));
-     return apiResponse.successResponseWithData(res, "Operation success", result);
-    } catch (err) {
+     var prevA = (await utils.getBalance(req.user, tokenA))[tokenA];
+     var prevB = (await utils.getBalance(req.user, tokenB))[tokenB];
+
+     console.log(`exchange=${exchange}, tokenA=${tokenA}, tokenB=${tokenB}, buyAmount=${buyAmount}, maxSlippage=${maxSlippage}, deadline=${deadline}`);
+     var output = (await dexUtils.swapExactFor(req.user, exchange, tokenA, tokenB, buyAmount, maxSlippage, deadline));
+     output["tradeInfo"] = (await swapInfo(exchange, tokenA, tokenB, prevA, prevB, req.user));
+     return apiResponse.successResponseWithData(res, "Operation success", output);
+    //} catch (err) {
      //throw error in json response with status 500.
      return apiResponse.ErrorResponse(res, err);
-    }
- }
+    //}
+  }
 ];
 
 /**
@@ -146,6 +237,7 @@ exports.swapForExact = [
  */
 
 exports.addLP = [
+  auth,
   body("exchange").isLength({ min: 1 }).trim().withMessage("exchange must be specified."),
   body("tokenA").isLength({ min: 1 }).trim().withMessage("tokenA must be specified."),
   body("tokenB").isLength({ min: 1 }).trim().withMessage("tokenB must be specified."),
@@ -154,7 +246,7 @@ exports.addLP = [
   body("minA").isLength({ min: 1 }).trim().withMessage("minA must be specified."),
   body("minB").isLength({ min: 1 }).trim().withMessage("minB must be specified."),
   async (req, res) => {
-    try {
+    //try {
      // TODO: How do we treat units, is it best to do it downstream >>> Do we assume everything is based on the 18 decimal system ?
      const exchange = String(req.body.exchange);
      const tokenA = String(req.body.tokenA);
@@ -163,15 +255,18 @@ exports.addLP = [
      const desiredB = String(req.body.desiredB);
      const minA = String(req.body.minA);
      const minB = String(req.body.minB);
+     var prevA = (await utils.getBalance(req.user, tokenA))[tokenA];
+     var prevB = (await utils.getBalance(req.user, tokenB))[tokenB];
+     var prevlp = 0;
      const deadline = Math.floor(Date.now() / 1000) + 60 * 20; // 20 minutes from the current Unix time
-     const nonce =  (await consumable.web3.eth.getTransactionCount(consumable.PUBLIC_KEY, "latest")); // get latest nonce
-     console.log(`exchange=${exchange}, tokenA=${tokenA}, tokenB=${tokenB}, desiredA=${desiredA}, desiredB=${desiredB}, minA=${minA}, minB=${minB}, deadline=${deadline}, nonce=${nonce}`);
-     result = (await dexUtils.addLiquidity(exchange, tokenA, tokenB, desiredA, desiredB, minA, minB, deadline, nonce));
-     return apiResponse.successResponseWithData(res, "Operation success", result);
-    } catch (err) {
+     console.log(`exchange=${exchange}, tokenA=${tokenA}, tokenB=${tokenB}, desiredA=${desiredA}, desiredB=${desiredB}, minA=${minA}, minB=${minB}, deadline=${deadline}`);
+     output = (await dexUtils.addLiquidity(req.user, exchange, tokenA, tokenB, desiredA, desiredB, minA, minB, deadline));
+     output["tradeInfo"] = (await lpinfo(exchange, tokenA, tokenB, prevA, prevB, prevlp, req.user));
+     return apiResponse.successResponseWithData(res, "Operation success", output);
+    //} catch (err) {
      //throw error in json response with status 500.
-     return apiResponse.ErrorResponse(res, err);
-    }
+    // return apiResponse.ErrorResponse(res, err);
+    //}
  }
 ];
 
@@ -182,6 +277,7 @@ exports.addLP = [
  */
 
 exports.removeLP = [
+  auth,
   body("exchange").isLength({ min: 1 }).trim().withMessage("exchange must be specified."),
   body("tokenA").isLength({ min: 1 }).trim().withMessage("tokenA must be specified."),
   body("tokenB").isLength({ min: 1 }).trim().withMessage("tokenB must be specified."),
@@ -198,11 +294,11 @@ exports.removeLP = [
      const minA = String(req.body.minA);
      const minB = String(req.body.minB);
      const deadline = Math.floor(Date.now() / 1000) + 60 * 20; // 20 minutes from the current Unix time
-     const nonce =  (await consumable.web3.eth.getTransactionCount(consumable.PUBLIC_KEY, "latest")); // get latest nonce
-     console.log(`exchange=${exchange}, tokenA=${tokenA}, tokenB=${tokenB}, liquidity=${liquidity}, minA=${minA}, minB=${minB}, deadline=${deadline}, nonce=${nonce}`);
-     result = (await dexUtils.removeLiquidity(exchange, tokenA, tokenB,
-                liquidity, minA, minB, deadline, nonce));
-     return apiResponse.successResponseWithData(res, "Operation success", result);
+     console.log(`exchange=${exchange}, tokenA=${tokenA}, tokenB=${tokenB}, liquidity=${liquidity}, minA=${minA}, minB=${minB}, deadline=${deadline}`);
+     output = (await dexUtils.removeLiquidity(req.user, exchange, tokenA, tokenB,
+                liquidity, minA, minB, deadline));
+     output["tradeInfo"] = (await lpinfo(exchange, tokenA, tokenB, prevA, prevB, 0, req.user));
+     return apiResponse.successResponseWithData(res, "Operation success", output);
     } catch (err) {
      //throw error in json response with status 500.
      return apiResponse.ErrorResponse(res, err);

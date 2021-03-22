@@ -15,21 +15,43 @@ MongoClient.connect(MONGODB_URL, { useUnifiedTopology: true }, function(err, db)
 
   // fill tokens
   var tokens = [
-    { name: "ETH", address: "0x0", decimal: 18},
-    { name: "DAI", address: "0x5592EC0cfb4dbc12D3aB100b257153436a1f0FEa", decimal: 18},
-    { name: "BAT", address: "0xbF7A7169562078c96f0eC1A8aFD6aE50f12e5A99", decimal: 18},
-    { name: "USDC", address: "0x4DBCdF9B62e891a7cec5A2568C3F4FAF9E8Abe2b", decimal: 18},
-    { name: "cDAI", address: "0x6D7F0754FFeb405d23C51CE938289d4835bE3b14", decimal: 8},
-    { name: "cUSDC", address: "0x5B281A6DdA0B271e91ae35DE655Ad301C976edb1", decimal: 8},
-    { name: "cBAT", address: "0xEBf1A11532b93a529b5bC942B4bAA98647913002", decimal: 8},
-    { name: "cETH", address: "0xd6801a1dffcd0a410336ef88def4320d6df1883e", decimal: 8}
+    { name: "ETH", description: "",
+    MAINNET: "0x0", KOVAN: "0x0", RINKEBY: "0x0", decimal: 18},
+    { name: "DAI", description: "",
+    MAINNET: "0x5592EC0cfb4dbc12D3aB100b257153436a1f0FEa", KOVAN: "0x1528F3FCc26d13F7079325Fb78D9442607781c8C", RINKEBY: "0xc7AD46e0b8a400Bb3C915120d284AafbA8fc4735",  decimal: 18},
+    { name: "MKR", description: "",
+    MAINNET: "0x9f8F72aA9304c8B593d555F12eF6589cC3A579A2", KOVAN: "0xef13C0c8abcaf5767160018d268f9697aE4f5375", RINKEBY: "0xF9bA5210F91D0474bd1e1DcDAeC4C58E359AaD85",  decimal: 18},
+    { name: "UNI", description: "",
+    MAINNET: "0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984", KOVAN: "0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984", RINKEBY: "0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984",  decimal: 18},
+    { name: "BAT", description: "",
+    MAINNET: "0xbF7A7169562078c96f0eC1A8aFD6aE50f12e5A99", KOVAN: "0x1f1f156E0317167c11Aa412E3d1435ea29Dc3cCE", RINKEBY: "0x0", decimal: 18},
+    { name: "USDC", description: "",
+    MAINNET: "0x4DBCdF9B62e891a7cec5A2568C3F4FAF9E8Abe2b", KOVAN: "0x2F375e94FC336Cdec2Dc0cCB5277FE59CBf1cAe5", RINKEBY: "0x0",  decimal: 18},
+    { name: "cDAI", description: "",
+    MAINNET: "0x6D7F0754FFeb405d23C51CE938289d4835bE3b14", KOVAN: "0x0", RINKEBY: "0x0",  decimal: 8},
+    { name: "cUSDC", description: "",
+    MAINNET: "0x5B281A6DdA0B271e91ae35DE655Ad301C976edb1", KOVAN: "0x0", RINKEBY: "0x0",  decimal: 8},
+    { name: "cBAT", description: "",
+    MAINNET: "0xEBf1A11532b93a529b5bC942B4bAA98647913002", KOVAN: "0x0", RINKEBY: "0x0",  decimal: 8},
+    { name: "cETH", description: "",
+    MAINNET: "0xd6801a1dffcd0a410336ef88def4320d6df1883e", KOVAN: "0x0", RINKEBY: "0x0",  decimal: 8}
   ];
   insert(dbo, "tokens", tokens);
+
+  // fill tokens
+  var contracts = [
+    { name: "UNI_ROUTER", description: "",
+    MAINNET: "0x7a250d5630b4cf539739df2c5dacb4c659f2488d", KOVAN: "0x7a250d5630b4cf539739df2c5dacb4c659f2488d", RINKEBY: "0x7a250d5630b4cf539739df2c5dacb4c659f2488d"},
+    { name: "SUSHI_ROUTER", description: "",
+    MAINNET: "0xd9e1cE17f2641f24aE83637ab66a2cca9C378B9F", KOVAN: "0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506", RINKEBY: "0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506"},
+  ];
+  insert(dbo, "contracts", contracts);
+
 
   // fill users
   var users = [
     { email: "test@gmail.com", password: "$2b$10$ZyWLtNjZ5fKGsH/GjPgFteb3/b5tT0ne92TTAkqaSU4Eji6vK1Pqa", remoteAddress: "0xB9b1225afcFf6AF2c1c958699a2EEbBAF9352964",
-      level: true, localAddress: "0xD93ec03787218Ea08EA3AAf36064A0f7F62543A4", localPrivateKey: "98c642e73ab4e301a8234a90a3d47ebdd19a54897c2b037c74bee853e5f09771"},
+      level: true, localAddress: "0xF039c2076bAc51eB12eA188013ee632Fbd354498", localPrivateKey: "447b028046e46eef3f536ce4d4ee0a618eb3e0bcb2e98f9f2e6458a3ab1bc49a"},
   ];
   insert(dbo, "users", users);
 

@@ -5,16 +5,17 @@ const HDWalletProvider = require('truffle-hdwallet-provider');
 const Web3 = require('web3');
 const { token } = require('../../DataController');
 
+const utils = require('../utils');
+const CHAIN = "rinkeby";
+
 // global variables
-//const infuraURI = process.env.INFURA_URI;
-const infuraURI = "https://rinkeby.infura.io/v3/eb8d27a5b3d24313b6d8a13e56464ce3";
-//const erc20ABIFpath = process.env.ERC20_ABI_FPATH;
+const infuraURI = process.env.INFURA_URI;
 
-//let IERC20 = fs.readFileSync(erc20ABIFpath);
-//IERC20 = JSON.parse(IERC20).abi;
-
+const compoundCoins = ["DAI","USDC","ETH","BAT"];
 const ethDecimals = 18; // Ethereum has 18 decimal places
 const underlyingDecimals = 18; // TODO: works for DAI at least
+
+// TODO: for now defaulting to rinkeby. MUST make more modular.
 
 // get coin decimals
 var tokenInfo;
@@ -22,7 +23,7 @@ var loadTokens = async function() {
     var tokenInfo = {};
     var tokens = await TokenModel.find();
     for (var token of tokens) {
-        tokenInfo[token.name] = {"decimal": token.decimal, "address": token.address}
+        tokenInfo[token.name] = {"decimal": token.decimal, "address": utils.selectChain(token, CHAIN)}
     }
     return tokenInfo;
 }
@@ -39,7 +40,7 @@ exports.lendETH = async function(user, amount) {
     const provider = new HDWalletProvider(privateKey, infuraURI);
     const web3 = new Web3(provider);
     var cETH = await TokenModel.findOne({name: "cETH"});
-    const cEthContract = new web3.eth.Contract(cEthAbi, cETH.address);
+    const cEthContract = new web3.eth.Contract(cEthAbi, utils.selectChain(cETH, CHAIN));
 
     var walletAddress = user.localAddress;
     let ethBalance = await web3.eth.getBalance(walletAddress) / Math.pow(10, ethDecimals);
@@ -80,7 +81,7 @@ exports.redeemETH = async function(user, amount) {
     var walletAddress = user.localAddress;
 
     // TODO: ADD checks on amount to be loaned etc
-    const cEthContract = new web3.eth.Contract(cEthAbi, cETH.address);
+    const cEthContract = new web3.eth.Contract(cEthAbi, utils.selectChain(cETH, CHAIN));
     let currEthBalance = await web3.eth.getBalance(walletAddress) / Math.pow(10, ethDecimals);
     let exchangeRateCurrent = await cEthContract.methods.exchangeRateCurrent().call();
     exchangeRateCurrent = exchangeRateCurrent / Math.pow(10, 18 + ethDecimals - 8);
@@ -119,12 +120,12 @@ exports.lendERC20 = async function(user, tokenName, amount) {
 
     amount = amount * Math.pow(10, underlyingDecimals)
 
-    const cTokenContractAddress = cToken.address;
+    const cTokenContractAddress = utils.selectChain(cToken, CHAIN);
     const cTokenContract = new web3.eth.Contract(cErcAbi, cTokenContractAddress);
 
     // Mainnet Contract for the underlying token https://etherscan.io/address/0x6b175474e89094c44da98b954eedeac495271d0f
     // When using cDAI, give your local test net wallet some DAI using `node seed-account-with-erc20/dai.js`
-    const underlyingContractAddress = token.address;
+    const underlyingContractAddress = utils.selectChain(token, CHAIN);
     const underlyingContract = new web3.eth.Contract(erc20Abi, underlyingContractAddress);
 
     // Tell the contract to allow 10 tokens to be taken by the cToken contract
@@ -172,12 +173,12 @@ exports.redeemERC20 = async function(user, tokenName, amount) {
     var cTokenName = "c"+tokenName;
     var token = await TokenModel.findOne({name: tokenName});
     var cToken = await TokenModel.findOne({name: cTokenName});
-    const cTokenContractAddress = cToken.address;
+    const cTokenContractAddress = utils.selectChain(cToken, CHAIN);
     const cTokenContract = new web3.eth.Contract(cErcAbi, cTokenContractAddress);
 
     // Mainnet Contract for the underlying token https://etherscan.io/address/0x6b175474e89094c44da98b954eedeac495271d0f
     // When using cDAI, give your local test net wallet some DAI using `node seed-account-with-erc20/dai.js`
-    const underlyingContractAddress = token.address;
+    const underlyingContractAddress = utils.selectChain(token, CHAIN);
     const underlyingContract = new web3.eth.Contract(erc20Abi, underlyingContractAddress);
 
     let currUnderlyingBalance = await underlyingContract.methods.balanceOf(walletAddress).call();
@@ -220,6 +221,8 @@ const {
   cErcAbi,
   erc20Abi,
 } = require('../../../contracts/Compound.json');
+const { contextsSymbol } = require('express-validator/src/base');
+const { Token } = require('@sushiswap/sdk');
 
 const logBalances = (tokenName, web3, cToken, underlying, walletAddress) => {
     return new Promise(async (resolve, reject) => {
@@ -248,7 +251,7 @@ exports.supplyCollateral = async function(user, tokenName, amount, verbose=false
     const comptroller = new web3.eth.Contract(comptrollerAbi, comptrollerAddress);
 
     var cTokenObj = await TokenModel.findOne({name: "c"+tokenName});
-    const cTokenAddress = cTokenObj.address;
+    const cTokenAddress = utils.selectChain(cTokenObj, CHAIN);
     const cTokenName = cTokenObj.name;
 
     var cTokenAmount;
@@ -281,7 +284,7 @@ exports.removeCollateral = async function(user, tokenNames, verbose=false) {
 
     for (var tokenName of tokenNames) {
         var cTokenObj = await TokenModel.findOne({name: "c"+tokenName});
-        const cTokenAddress = cTokenObj.address;
+        const cTokenAddress = utils.selectChain(cTokenObj, CHAIN);
         const cTokenName = cTokenObj.name;
 
         console.log('\Exiting market (via Comptroller contract) for ETH (as collateral)...');
@@ -374,22 +377,19 @@ exports.borrowBalances = async function(user) {
 
     var balances = {}
     for (var tokenName of tokenNames) {
-        if (tokenName[0] != "c") {
+        if ((tokenName[0] != "c") && (compoundCoins.includes(tokenName))) {
             const tokenObj = await TokenModel.findOne({name: "c"+tokenName});
             var cToken;
-            console.log(tokenName);
+
             if (tokenName == "ETH") {
-                cToken = new web3.eth.Contract(cEthAbi, tokenObj.address);
+                cToken = new web3.eth.Contract(cEthAbi, utils.selectChain(tokenObj, CHAIN));
             } else {
-                cToken = new web3.eth.Contract(cErcAbi, tokenObj.address);
+                cToken = new web3.eth.Contract(cErcAbi, utils.selectChain(tokenObj, CHAIN));
             }
             console.log('\nFetching your borrow balance from contract...');
             let balance = await cToken.methods.borrowBalanceCurrent(walletAddress).call();
             balance = balance / 1e18; // because DAI is a 1e18 scaled token.
             balances[tokenName] = balance;
-            console.log(`Borrow balance is ${balance}`);
-            console.log(`\nThis part is when you do something with those borrowed assets!\n`);
-            console.log(`Now repaying the borrow...`);
         }
     }
 
@@ -435,17 +435,47 @@ exports.borrowERC20 = async function(user, tokenName, amount) {
     var cTokenName = "c"+tokenName;
     var token = await TokenModel.findOne({name: tokenName});
     var cToken = await TokenModel.findOne({name: cTokenName});
-    const cTokenContract = new web3.eth.Contract(cErcAbi, cToken.address);
+    const cTokenContract = new web3.eth.Contract(cErcAbi, utils.selectChain(cToken, CHAIN));
 
     console.log(`Fetching borrow rate per block for ${tokenName} borrowing...`);
     let borrowRate = await cTokenContract.methods.borrowRatePerBlock().call();
     borrowRate = borrowRate / Math.pow(10, underlyingDecimals);
     
-    console.log(`Now attempting to borrow ${underlyingToBorrow} ${tokenName}...`);
-    const scaledUpBorrowAmount = (underlyingToBorrow * Math.pow(10, underlyingDecimals)).toString();
-    const trx = await cTokenContract.methods.borrow(scaledUpBorrowAmount).send({ from: fromMyWallet });
+    console.log(`Now attempting to borrow ${amount} ${tokenName}...`);
+    const scaledUpBorrowAmount = (amount * Math.pow(10, underlyingDecimals)).toString();
+    const trx = await cTokenContract.methods.borrow(scaledUpBorrowAmount).send({ from: walletAddress });
     console.log("Borrow transaction", trx);
 
     var balances = await this.borrowBalances(user);
     return {"balances": balances, borrowRate: borrowRate};
+}
+
+exports.repayERC20 = async function(user, tokenName, amount) {
+
+    const walletAddress = user.localAddress;
+    const userSearch = await UserModel.findOne({email: user.email});
+    const privateKey = userSearch.localPrivateKey;
+    const provider = new HDWalletProvider(privateKey, infuraURI);
+    const web3 = new Web3(provider);
+    var cToken = await TokenModel.findOne({ name: "c"+tokenName });
+    var token = await TokenModel.findOne({ name: tokenName });
+    var cTokenAddress = utils.selectChain(cToken, CHAIN);
+    var tokenAddress = utils.selectChain(token, CHAIN);
+    const underlying = new web3.eth.Contract(erc20Abi, tokenAddress);
+    const cTokenContract = new web3.eth.Contract(cErcAbi, cTokenAddress);
+
+    console.log(`Approving ${tokenName} to be transferred from your wallet to the c${tokenName} contract...`);
+    const underlyingToRepay = (amount * Math.pow(10, underlyingDecimals)).toString();
+    await underlying.methods.approve(cTokenAddress, underlyingToRepay).send({ from: walletAddress });
+
+    const repayBorrow = await cTokenContract.methods.repayBorrow(underlyingToRepay).send({ from: walletAddress });
+
+    if (repayBorrow.events && repayBorrow.events.Failure) {
+      const errorCode = repayBorrow.events.Failure.returnValues.error;
+      console.error(`repayBorrow error, code ${errorCode}`);
+      process.exit(1);
+    }
+
+    var balances = await this.borrowBalances(user);
+    return balances;
 }

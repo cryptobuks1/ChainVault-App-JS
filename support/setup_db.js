@@ -40,6 +40,8 @@ MongoClient.connect(MONGODB_URL, { useUnifiedTopology: true }, function(err, db)
 
   // fill tokens
   var contracts = [
+    { name: "COMP_COMPTROLLER", description: "",
+    MAINNET: "0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B", KOVAN: "0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B", RINKEBY: "0x2EAa9D77AE4D8f9cdD9FAAcd44016E746485bddb"},
     { name: "UNI_ROUTER", description: "",
     MAINNET: "0x7a250d5630b4cf539739df2c5dacb4c659f2488d", KOVAN: "0x7a250d5630b4cf539739df2c5dacb4c659f2488d", RINKEBY: "0x7a250d5630b4cf539739df2c5dacb4c659f2488d"},
     { name: "SUSHI_ROUTER", description: "",

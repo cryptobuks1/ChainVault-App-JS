@@ -1,15 +1,23 @@
-//const { wrapper } = require('./module.js');
 const sushiswap = require('@sushiswap/sdk');
 const consumable = require('./consumables.js')
 var assert = require('assert');
+const fetch = require('node-fetch');
 
 async function getPath(tokenA, tokenB) {
+
+  /**
+   * @param {string} tokenA is token
+   * @param {string} tokenB is token
+   *
+   * @returns {array} tokenA, tokenB
+  **/
+
   if (tokenA == "ETH"){
     tokenA = "WETH";
-  } else if (tokenB=="ETH") {
+  } else if (tokenB == "ETH") {
     tokenB = "WETH";
   }
-  return [consumable.addresses[tokenA], consumable.addresses[tokenB]];
+  return [consumable.tokens[tokenA].address, consumable.tokens[tokenB].address];
 }
 
 async function swapExactFor(tokenA, tokenB, fromSwap, toSwap, deadline, nonce) {
@@ -99,12 +107,12 @@ async function addLiquidity(tokenA, tokenB, desiredA, desiredB, minA, minB, dead
     // using special method for posting ethereum
     tokenA = "WETH";
     tx['value'] = desiredA;
-    return (await consumable.uniRouterContract.methods.addLiquidityETH(consumable.addresses[tokenB],
+    return (await consumable.uniRouterContract.methods.addLiquidityETH(consumable.tokens[tokenB].address,
                                                desiredB, minA, minB, consumable.PUBLIC_KEY, deadline).send(tx));
   } else {
     // using other method
-    return (await consumable.uniRouterContract.methods.addLiquidity(consumable.addresses[tokenA],
-                                               consumable.addresses[tokenB], desiredA, desiredB, minA, minB,
+    return (await consumable.uniRouterContract.methods.addLiquidity(consumable.tokens[tokenA].address,
+                                               consumable.tokens[tokenB].address, desiredA, desiredB, minA, minB,
                                                consumable.PUBLIC_KEY, deadline).send(tx));
   }
 }
@@ -128,10 +136,10 @@ async function removeLiquidity(tokenA, tokenB, liquidity, minA, minB, deadline, 
   path = (await getPath(tokenA, tokenB));
   if (tokenA == "ETH") {
     tokenA = "WETH";
-    return (await consumable.uniRouterContract.methods.removeLiquidityETH(addresses[tokenB], liquidity,
+    return (await consumable.uniRouterContract.methods.removeLiquidityETH(consumable.tokens[tokenB].address, liquidity,
                   minA, minB, consumable.PUBLIC_KEY, deadline).send(tx));
   } else {
-    return (await consumable.uniRouterContract.methods.removeLiquidity(addresses[tokenA], addresses[tokenB],
+    return (await consumable.uniRouterContract.methods.removeLiquidity(consumable.tokens[tokenA].address, consumable.tokens[tokenB].address,
                   liquidity, minA, minB, consumable.PUBLIC_KEY, deadline).send(tx));
   }
 }
@@ -147,7 +155,7 @@ async function tokenMaker(tokenName, tokenAmount=0) {
   if (tokenName == "ETH") {
     tokenName = "WETH";
   }
-  const token_ = await (new sushiswap.Token(sushiswap.ChainId[consumable.CHAIN], addresses[tokenName], 18, tokenName));
+  const token_ = await (new sushiswap.Token(sushiswap.ChainId[consumable.CHAIN], consumable.tokens[tokenName].address, 18, tokenName));
   const tokenAmount_ = await (new sushiswap.TokenAmount(token_, tokenAmount));
   return tokenAmount_;
 }
@@ -233,6 +241,27 @@ async function tradeImpacts(tokenA, tokenB, amountA, amountB, type) {
   return (await trade);
 }
 
+async function queryGraph(query) {
+
+  /***
+  *  @param {string} query is graphQL query
+  *
+  * @returns {Object} of type json result
+  ***/
+
+  console.log("Querying URL=",consumable.SUSHIGRAPH_URI);
+
+  const res = await fetch(consumable.SUSHIGRAPH_URI, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ query })
+  });
+
+  const data = await res.json();
+  console.log(JSON.stringify(data, null, 2));
+  return data;
+}
+
 module.exports.swapExactFor = swapExactFor;
 module.exports.swapForExact = swapForExact;
 module.exports.addLiquidity = addLiquidity;
@@ -242,3 +271,4 @@ module.exports.pairMaker = pairMaker;
 module.exports.routeToLP = routeToLP;
 module.exports.midPrice = midPrice;
 module.exports.tradeImpacts = tradeImpacts;
+module.exports.queryGraph = queryGraph;

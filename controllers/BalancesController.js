@@ -11,7 +11,7 @@ mongoose.set("useFindAndModify", false);
 
 /**
  * Gets balances.
- * 
+ *
  * @returns {Object}
  */
  exports.balancesList = [
@@ -19,13 +19,13 @@ mongoose.set("useFindAndModify", false);
 	async function (req, res) {
 		try {
 			var balanceList = await utils.getBalances(req.user);
-			if(Object.keys(balanceList).length > 0){
+			if(Object.keys(balanceList).length > 0) {
 				return apiResponse.successResponseWithData(res, "Operation success", balanceList);
-			}else{
+			} else {
 				return apiResponse.successResponseWithData(res, "Operation success", []);
 			}
 		} catch (err) {
-			//throw error in json response with status 500. 
+			//throw error in json response with status 500.
 			return apiResponse.ErrorResponse(res, err);
 		}
 	}
@@ -33,7 +33,7 @@ mongoose.set("useFindAndModify", false);
 
 /**
  * Gets balances.
- * 
+ *
  * @returns {Object}
  */
  exports.balance = [
@@ -41,13 +41,13 @@ mongoose.set("useFindAndModify", false);
 	async function (req, res) {
 		try {
 			var balance = await utils.getBalance(req.user, req.params.tokenName);
-			if(Object.keys(balance).length > 0){
+			if(Object.keys(balance).length > 0) {
 				return apiResponse.successResponseWithData(res, "Operation success", balance);
-			}else{
+			} else {
 				return apiResponse.successResponseWithData(res, "Operation success", []);
 			}
 		} catch (err) {
-			//throw error in json response with status 500. 
+			//throw error in json response with status 500.
 			return apiResponse.ErrorResponse(res, err);
 		}
 	}

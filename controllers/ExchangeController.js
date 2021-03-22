@@ -3,8 +3,6 @@ const apiResponse = require("../helpers/apiResponse");
 const dexUtils = require("./utils/dexUtils.js")
 const consumable = require('./utils/exchanges/consumables.js')
 
-//const TokenModel = require("../models/TokenModel");
-//const ContractModel = require("../models/ContractModel");
 const { body,validationResult } = require("express-validator");
 
 /**
@@ -47,6 +45,61 @@ exports.LPaddress = [
      lpaddress = await dexUtils.routeToLP(exchange, tokenA, tokenB);
      console.log(`tokenA=${tokenA}, tokenB=${tokenB}, lpaddress=${lpaddress}`);
      return apiResponse.successResponseWithData(res, "Operation success", lpaddress);
+    } catch (err) {
+     //throw error in json response with status 500.
+     return apiResponse.ErrorResponse(res, err);
+    }
+ }
+];
+
+/**
+ * Query the graph
+ *
+ * @returns {Object}, result of query
+ */
+
+ exports.queryGraph = [
+  body("exchange").isLength({ min: 1 }).trim().withMessage("exchange must be specified."),
+  body("query").isLength({ min: 1 }).trim().withMessage("query must be specified."),
+	async (req, res) => {
+		try {
+      const exchange = String(req.params.exchangeName);
+      const query = String(req.body.query);
+      console.log(`Fetching graph on exchange=${exchange}`);
+      const graph = (await dexUtils.queryGraph(exchange, query));
+			return apiResponse.successResponseWithData(res, "Operation success", graph);
+		} catch (err) {
+			//throw error in json response with status 500.
+			return apiResponse.ErrorResponse(res, err);
+		}
+	}
+];
+
+/**
+ * swapExactFor - Swap an exact amount of tokenA for tokenB
+ *
+ * @returns {Object}, result of lp removal call
+ */
+
+exports.swapExactFor = [
+  body("exchange").isLength({ min: 1 }).trim().withMessage("exchange must be specified."),
+  body("tokenA").isLength({ min: 1 }).trim().withMessage("tokenA must be specified."),
+  body("tokenB").isLength({ min: 1 }).trim().withMessage("tokenB must be specified."),
+  body("sellAmount").isLength({ min: 1 }).trim().withMessage("sellAmount must be specified."),
+  body("maxSlippage").isLength({ min: 1 }).trim().withMessage("maxSlippage must be specified."),
+  async (req, res) => {
+    try {
+     // TODO: How do we treat units, is it best to do it downstream >>> Do we assume everything is based on the 18 decimal system ?
+     const exchange = String(req.body.exchange);
+     const tokenA = String(req.body.tokenA);
+     const tokenB = String(req.body.tokenB);
+     const sellAmount = String(req.body.sellAmount);
+     const maxSlippage = String(req.body.maxSlippage);
+     const deadline = Math.floor(Date.now() / 1000) + 60 * 20; // 20 minutes from the current Unix time
+     const nonce =  (await consumable.web3.eth.getTransactionCount(consumable.PUBLIC_KEY, "latest")); // get latest nonce
+     console.log(`exchange=${exchange}, tokenA=${tokenA}, tokenB=${tokenB}, buyAmount=${sellAmount}, maxSlippage=${maxSlippage}, deadline=${deadline}, nonce=${nonce}`);
+     result = (await dexUtils.swapExactFor(exchange, tokenA, tokenB, sellAmount, maxSlippage, deadline, nonce));
+     return apiResponse.successResponseWithData(res, "Operation success", result);
     } catch (err) {
      //throw error in json response with status 500.
      return apiResponse.ErrorResponse(res, err);

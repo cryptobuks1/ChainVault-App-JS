@@ -11,18 +11,23 @@ mongoose.set("useFindAndModify", false);
 // Token Schema
 function TokenData(data) {
 	this.id = data._id;
-	this.name= data.name;
-	this.address = data.address;
+	this.name = data.name;
+  this.description = data.description;
+	this.MAINNET = data.MAINNET;
+	this.KOVAN = data.KOVAN;
+	this.RINKEBY = data.RINKEBY;
+	this.decimal = data.decimal;
 }
 
 /**
  * Create token.
- * 
+ *
  * @param {string} name
  * @param {string} address
- * 
+ *
  * @returns {Object}
  */
+
  exports.tokenStore = [
 	body("name", "Name must not be empty.").isLength({ min: 1 }).trim().custom((value) => {
 		return TokenModel.findOne({name : value}).then((token) => {
@@ -38,8 +43,8 @@ function TokenData(data) {
 			const errors = validationResult(req);
 			var token = new TokenModel(
 				{ name: req.body.name,
-				  address: req.body.address}
-            );
+					address: req.body.address}
+						);
 			if (!errors.isEmpty()) {
 				return apiResponse.validationErrorWithData(res, "Validation Error.", errors.array());
 			}
@@ -52,7 +57,7 @@ function TokenData(data) {
 				});
 			}
 		} catch (err) {
-			//throw error in json response with status 500. 
+			//throw error in json response with status 500.
 			return apiResponse.ErrorResponse(res, err);
 		}
 	}
@@ -60,7 +65,7 @@ function TokenData(data) {
 
 /**
  * List tokens.
- * 
+ *
  * @returns {Object}
  */
  exports.tokenList = [
@@ -72,9 +77,9 @@ function TokenData(data) {
 			}else{
 				return apiResponse.successResponseWithData(res, "Operation success", []);
 			}
-		
+
 		} catch (err) {
-			//throw error in json response with status 500. 
+			//throw error in json response with status 500.
 			return apiResponse.ErrorResponse(res, err);
 		}
 	}
@@ -82,9 +87,9 @@ function TokenData(data) {
 
 /**
  * List tokens.
- * 
+ *
  * @param {int} id
- * 
+ *
  * @returns {Object}
  */
  exports.token = [
@@ -96,9 +101,9 @@ function TokenData(data) {
 			}else{
 				return apiResponse.successResponseWithData(res, "Operation success", []);
 			}
-		
+
 		} catch (err) {
-			//throw error in json response with status 500. 
+			//throw error in json response with status 500.
 			return apiResponse.ErrorResponse(res, err);
 		}
 	}

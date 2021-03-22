@@ -13,9 +13,9 @@ mongoose.set("useFindAndModify", false);
 
 /**
  * Redeem cETH
- * 
+ *
  * @param {float} amount
- * 
+ *
  * @returns {Object}
  */
  exports.redeem = [
@@ -25,7 +25,7 @@ mongoose.set("useFindAndModify", false);
 		.isNumeric({ min: 0.00000001 }).withMessage("Amount must be numeric."),
     sanitizeBody("amount").escape(),
 	async function (req, res) {
-		try {
+		//try {
             var tokenAmount;
             const tokenName = req.body.tokenName;
             if (req.body.tokenName == "ETH") {
@@ -38,19 +38,19 @@ mongoose.set("useFindAndModify", false);
 			}else{
 				return apiResponse.successResponseWithData(res, "Operation success", []);
 			}
-		} catch (err) {
-			//throw error in json response with status 500. 
-			return apiResponse.ErrorResponse(res, err);
-		}
+		//} catch (err) {
+			//throw error in json response with status 500.
+		//	return apiResponse.ErrorResponse(res, err);
+		//}
 	}
 ];
 
 /**
  * Lend tokens.
- * 
+ *
  * @param {string} tokenName
  * @param {float} amount
- * 
+ *
  * @returns {Object}
  */
  exports.lend = [
@@ -74,7 +74,7 @@ mongoose.set("useFindAndModify", false);
 				return apiResponse.successResponseWithData(res, "Operation success", []);
 			}
 		} catch (err) {
-			//throw error in json response with status 500. 
+			//throw error in json response with status 500.
 			return apiResponse.ErrorResponse(res, err);
 		}
 	}
@@ -82,11 +82,11 @@ mongoose.set("useFindAndModify", false);
 
 /**
  * Supply collateral.
- * 
+ *
  * @param {string} tokenName
  * @param {float} amount
  * @param {boolean} verbose
- * 
+ *
  * @returns {Object}
  */
  exports.supplyCollateral = [
@@ -107,7 +107,7 @@ mongoose.set("useFindAndModify", false);
 				return apiResponse.successResponseWithData(res, "Operation success", []);
 			}
 		} catch (err) {
-			//throw error in json response with status 500. 
+			//throw error in json response with status 500.
 			return apiResponse.ErrorResponse(res, err);
 		}
 	}
@@ -115,10 +115,10 @@ mongoose.set("useFindAndModify", false);
 
 /**
  * Remove collateral.
- * 
+ *
  * @param {[string]} tokenNames
  * @param {boolean} verbose
- * 
+ *
  * @returns {Object}
  */
  exports.removeCollateral = [
@@ -136,7 +136,7 @@ mongoose.set("useFindAndModify", false);
 				return apiResponse.successResponseWithData(res, "Operation success", []);
 			}
 		} catch (err) {
-			//throw error in json response with status 500. 
+			//throw error in json response with status 500.
 			return apiResponse.ErrorResponse(res, err);
 		}
 	}
@@ -144,7 +144,7 @@ mongoose.set("useFindAndModify", false);
 
 /**
  * List collateral.
- * 
+ *
  * @returns {Object}
  */
  exports.collateral = [
@@ -158,7 +158,7 @@ mongoose.set("useFindAndModify", false);
 				return apiResponse.successResponseWithData(res, "Operation success", []);
 			}
 		} catch (err) {
-			//throw error in json response with status 500. 
+			//throw error in json response with status 500.
 			return apiResponse.ErrorResponse(res, err);
 		}
 	}
@@ -166,10 +166,10 @@ mongoose.set("useFindAndModify", false);
 
 /**
  * Borrow tokens.
- * 
+ *
  * @param {string} tokenName
  * @param {float} amount
- * 
+ *
  * @returns {Object}
  */
  exports.borrow = [
@@ -193,7 +193,7 @@ mongoose.set("useFindAndModify", false);
 				return apiResponse.successResponseWithData(res, "Operation success", []);
 			}
 		} catch (err) {
-			//throw error in json response with status 500. 
+			//throw error in json response with status 500.
 			return apiResponse.ErrorResponse(res, err);
 		}
 	}
@@ -201,7 +201,7 @@ mongoose.set("useFindAndModify", false);
 
 /**
  * Get balances.
- * 
+ *
  * @returns {Object}
  */
  exports.borrowBalances = [
@@ -215,7 +215,7 @@ mongoose.set("useFindAndModify", false);
 				return apiResponse.successResponseWithData(res, "Operation success", []);
 			}
 		} catch (err) {
-			//throw error in json response with status 500. 
+			//throw error in json response with status 500.
 			return apiResponse.ErrorResponse(res, err);
 		}
 	}
@@ -223,10 +223,10 @@ mongoose.set("useFindAndModify", false);
 
 /**
  * Repay tokens.
- * 
+ *
  * @param {string} tokenName
  * @param {float} amount
- * 
+ *
  * @returns {Object}
  */
  exports.repay = [
@@ -250,7 +250,7 @@ mongoose.set("useFindAndModify", false);
 				return apiResponse.successResponseWithData(res, "Operation success", []);
 			}
 		} catch (err) {
-			//throw error in json response with status 500. 
+			//throw error in json response with status 500.
 			return apiResponse.ErrorResponse(res, err);
 		}
 	}

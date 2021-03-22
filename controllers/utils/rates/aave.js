@@ -21,58 +21,30 @@ const underlyingDecimals = 18; // TODO: works for DAI at least
 
 const aaveCoins = ["DAI","USDC","ETH","BAT"];
 
-const aTokenAbi = require('../../../contracts/AToken.json');
-const lendPoolAbi = require('../../../contracts/LendingPool.json');
-const lendPoolAddrProv = require('../../../contracts/LendingPoolAddressesProvider.json');
-const lendPoolCore = require('../../../contracts/LendingPoolCore.json');
-const wETHGateway = require("../../../contracts/WETHGateway.json");
+//const aTokenAbi = require('../../../contracts/AToken.json');
+//const lendPoolAbi = require('../../../contracts/LendingPool.json');
+//const lendPoolAddrProv = require('../../../contracts/LendingPoolAddressesProvider.json');
+//const lendPoolCore = require('../../../contracts/LendingPoolCore.json');
+//const wETHGateway = require("../../../contracts/WETHGateway.json");
 
 // get coin decimals
 var tokenInfo;
 var loadTokens = async function() {
-    var tokenInfo = {};
-    var tokens = await TokenModel.find();
-    for (var token of tokens) {
-        tokenInfo[token.name] = {"decimal": token.decimal, "address": utils.selectChain(token, CHAIN)}
+    var tokens = {};
+    const tokensData = (await TokenModel.find());
+    const ercContract = require("../../../contracts/IERC20.json"); // eth abi
+    const web3 = new Web3();
+    for (var token of tokensData) {
+      if (token[CHAIN] != "0x0"){
+        tokens[token.name] = { "decimal": token.decimal, "address": token[CHAIN], "contract": new web3.eth.Contract(ercContract.abi, token[CHAIN]) };
+      } else {
+        var entry = { "decimal": token.decimal, "address": token[CHAIN], "contract": "" };
+        tokens[token.name] = entry;//{ "decimal": String(token.decimal), "address": token[CHAIN], "contract": "" };
+      }
     }
-    return tokenInfo;
+    return tokens;
 }
 // TODO: why does async await not work here
 loadTokens().then((info) => {
     tokenInfo = info
 });
-
-
-exports.lendETH = async function(user, amount) {
-
-    const userSearch = await UserModel.findOne({email: user.email});
-    const privateKey = userSearch.localPrivateKey;
-    const provider = new HDWalletProvider(privateKey, infuraURI);
-    const web3 = new Web3(provider);
-
-    // Loading the lending pool instance. TODO: automate
-    const lendPoolAddress = "0x506B0B2CF20FAA8f38a4E2B524EE43e1f4458Cc5";
-    const providerInstance = new web3.eth.Contract(lendPoolAddrProv, lendPoolAddress);
-    const lendingPoolAddress = await providerInstance.methods.getLendingPool().call()
-    .catch((e) => {
-        throw Error(`Error getting lendingPool address: ${e.message}`)
-    });
-    const lendingPoolInstance = new web3.eth.Contract(lendPoolAbi, lendingPoolAddress);
-
-    amount = amount * Math.pow(10, ethDecimals);
-    amount = parseInt(amount);
-    var walletAddress = user.localAddress;
-
-    lendingPoolInstance.methods.deposit(
-        "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", amount, 0).send({from: walletAddress, value: web3.utils.toHex(amount)})
-          .once('transactionHash', (hash) => {
-              console.log(hash);
-          })
-          .on('confirmation', (number, receipt) => {
-              // number of confirmations
-              console.log(receipt);
-          })
-          .on('error', (error) => {
-              console.log(error);
-          });
-}

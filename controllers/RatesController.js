@@ -61,18 +61,14 @@ mongoose.set("useFindAndModify", false);
     sanitizeBody("amount").escape(),
 	async function (req, res) {
 		try {
-            var cTokenAmount;
-            var cTokenName;
+            var result;
             if (req.body.tokenName == "ETH") {
-                cTokenAmount = await compoundUtils.lendETH(req.user, req.body.amount);
-                cTokenName = "cETH";
+                result = await compoundUtils.lendETH(req.user, req.body.amount);
             } else {
-                cTokenAmount = await compoundUtils.lendERC20(req.user, req.body.tokenName, req.body.amount);
-                console.log(cTokenAmount);
-                cTokenName = "c"+req.body.tokenName;
+                result = await compoundUtils.lendERC20(req.user, req.body.tokenName, req.body.amount);
             }
-			if(cTokenAmount > 0){
-				return apiResponse.successResponseWithData(res, "Operation success", { [cTokenName] : cTokenAmount });
+			if(Object.keys(result).length > 0){
+				return apiResponse.successResponseWithData(res, "Operation success", { "success" : result });
 			}else{
 				return apiResponse.successResponseWithData(res, "Operation success", []);
 			}
@@ -188,7 +184,7 @@ mongoose.set("useFindAndModify", false);
             if (req.body.tokenName == "ETH") {
                 result = await compoundUtils.borrowETH(req.user, req.body.amount);
             } else {
-                //
+                result = await compoundUtils.borrowERC20(req.user, req.body.tokenName, req.body.amount);
             }
 			if(Object.keys(result).length > 0){
 				return apiResponse.successResponseWithData(res, "Operation success", { "success" : result });

@@ -37,11 +37,16 @@ const ethUniContract = new web3.eth.Contract(ercContract.abi, ADDRESS_ETHUNI_UNI
 addresses = {"DAI": ADDRESS_DAI, "MKR": ADDRESS_MKR,  "UNI": ADDRESS_UNI,
              "WETH": ADDRESS_WETH, "ETH-DAI_UNILP": ADDRESS_ETHDAI_UNILP, "DAI-MKR_UNILP": ADDRESS_DAIMKR_UNILP};
 
+const UNIGRAPH_URI = "https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v2";
+const SUSHIGRAPH_URI = "https://api.thegraph.com/subgraphs/name/sushiswap/exchange";
+
 module.exports.MNEMONIC = process.env.MNEMONIC;
 module.exports.PUBLIC_KEY = process.env.PUBLIC_KEY;
 module.exports.PRIVATE_KEY = process.env.PRIVATE_KEY;
 module.exports.CHAIN = process.env.CHAIN;
 module.exports.INFURA_URI = process.env.INFURA_URI;
+module.exports.UNIGRAPH_URI = UNIGRAPH_URI;
+module.exports.SUSHIGRAPH_URI = SUSHIGRAPH_URI;
 module.exports.ADDRESS_UNI_ROUTER = ADDRESS_UNI_ROUTER;
 module.exports.daiContract = daiContract;
 module.exports.mkrContract = mkrContract;

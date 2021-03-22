@@ -1,16 +1,16 @@
-//const { wrapper } = require('./module.js');
 const uniswap = require('@uniswap/sdk');
 const consumable = require('./consumables.js')
 var assert = require('assert');
+const fetch = require('node-fetch');
 
 async function getPath(tokenA, tokenB) {
+
   /**
    * @param {string} tokenA is token
    * @param {string} tokenB is token
    *
    * @returns {array} tokenA, tokenB
   **/
-
 
   if (tokenA == "ETH") {
     tokenA = "WETH";
@@ -240,6 +240,26 @@ async function tradeImpacts(tokenA, tokenB, amountA, amountB, type) {
   return (await trade);
 }
 
+async function queryGraph(query) {
+
+  /***
+  *  @param {string} query is graphQL query
+  *
+  * @returns {Object} of type json result
+  ***/
+
+  console.log("Querying URL=",consumable.UNIGRAPH_URI);
+
+  const res = await fetch(consumable.UNIGRAPH_URI, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ query })
+  });
+
+  const data = await res.json();
+  console.log(JSON.stringify(data, null, 2));
+  return data;
+}
 module.exports.swapExactFor = swapExactFor;
 module.exports.swapForExact = swapForExact;
 module.exports.addLiquidity = addLiquidity;
@@ -249,3 +269,4 @@ module.exports.pairMaker = pairMaker;
 module.exports.routeToLP = routeToLP;
 module.exports.midPrice = midPrice;
 module.exports.tradeImpacts = tradeImpacts;
+module.exports.queryGraph = queryGraph;

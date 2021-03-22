@@ -166,6 +166,14 @@ async function tradeImpacts(exchange, tokenA, tokenB, amountA, amountB, type) {
   }
 }
 
+async function queryGraph(exchange, query) {
+  if (exchange == "uniswap") {
+    return (await uniDEX.queryGraph(query));
+  } else if (exchange == "sushiswap") {
+    return (await sushiDEX.queryGraph(query));
+  }
+}
+
 module.exports.swapExactFor = swapExactFor;
 module.exports.swapForExact = swapForExact;
 module.exports.addLiquidity = addLiquidity;
@@ -173,3 +181,4 @@ module.exports.removeLiquidity = removeLiquidity;
 module.exports.routeToLP = routeToLP;
 module.exports.midPrice = midPrice;
 module.exports.tradeImpacts = tradeImpacts;
+module.exports.queryGraph = queryGraph;

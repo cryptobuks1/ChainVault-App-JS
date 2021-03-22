@@ -1,5 +1,7 @@
 require("dotenv").config();
 const CHAIN = process.env.CHAIN;
+const infuraURI = process.env.INFURA_URI;
+
 const UserModel = require("../../models/UserModel");
 const TokenModel = require("../../models/TokenModel");
 
@@ -9,15 +11,22 @@ const Web3 = require('web3');
 const { urlencoded } = require("express");
 
 // global variables
-const privateKey = process.env.PRIVATE_KEY;
-const infuraURI = process.env.INFURA_URI;
 const erc20ABIFpath = process.env.ERC20_ABI_FPATH;
 
 let IERC20 = fs.readFileSync(erc20ABIFpath);
 IERC20 = JSON.parse(IERC20).abi;
 
+const privateKey = process.env.PRIVATE_KEY;
 const provider = new HDWalletProvider(privateKey, infuraURI);
-const web3 = new Web3(provider);
+const web3Dummy = new Web3(provider);
+
+async function web3User(user) {
+  const userSearch = await UserModel.findOne({email: user.email});
+  const privateKey = userSearch.localPrivateKey;
+  const provider = new HDWalletProvider(privateKey, infuraURI);
+  const web3 = new Web3(provider);
+  return web3;
+}
 
 // get coin decimals
 var tokenInfo;
@@ -27,7 +36,7 @@ var loadTokens = async function() {
     const ercContract = require("../../contracts/IERC20.json"); // eth abi
     for (var token of tokensData) {
       if (token[CHAIN] != "0x0"){
-        tokens[token.name] = { "decimal": token.decimal, "address": token[CHAIN], "contract": new web3.eth.Contract(ercContract.abi, token[CHAIN]) };
+        tokens[token.name] = { "decimal": token.decimal, "address": token[CHAIN], "contract": new web3Dummy.eth.Contract(ercContract.abi, token[CHAIN]) };
       } else{
         var entry = { "decimal": token.decimal, "address": token[CHAIN], "contract": "" };
         tokens[token.name] = entry;//{ "decimal": String(token.decimal), "address": token[CHAIN], "contract": "" };
@@ -50,22 +59,23 @@ exports.createWallet = function() {
 // TODO: resolve or just use email?
 exports.getBalances = async function(user) {
 
+    const privateKey = process.env.PRIVATE_KEY;
+    const provider = new HDWalletProvider(privateKey, infuraURI);
+    const web3 = new Web3(provider);
+
     var walletAddress = user.localAddress;
     result = {};
 
     // get ETH balance
     var ethBalance = await web3.eth.getBalance(walletAddress);
     ethBalance /= Math.pow(10, tokenInfo["ETH"]["decimal"]);
-    console.log(ethBalance);
     result["ETH"] = ethBalance
 
     // get token balances
     for (var token of Object.keys(tokenInfo)) {
-        console.log(token);
         if (token != "ETH") {
             let address = tokenInfo[token]["address"];;
             // TODO: save
-            console.log(address);
             if (address == "0x0") {
               continue;
             }
@@ -81,6 +91,10 @@ exports.getBalances = async function(user) {
 
 // IDs get passed as ObjectID
 exports.getBalance = async function(user, tokenName) {
+
+    const privateKey = process.env.PRIVATE_KEY;
+    const provider = new HDWalletProvider(privateKey, infuraURI);
+    const web3 = new Web3(provider);
 
     var walletAddress = user.localAddress;
     result = {};
@@ -98,3 +112,12 @@ exports.getBalance = async function(user, tokenName) {
     }
     return result;
 }
+
+exports.approveTransfer = async function(user, targetAddress, tokenName, amount) {
+
+  web3 = await web3User(user);
+  tx = { from: user.localAddress, to: targetAddress };
+  result = (await tokenInfo[tokenName]["contract"].methods.approve(targetAddress, web3.utils.toWei(amount, "ether")).send(tx));
+  return result;
+}
+exports.web3User = web3User;

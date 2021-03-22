@@ -27,7 +27,7 @@ async function swapExactFor(tokenA, tokenB, fromSwap, toSwap, deadline, nonce) {
   **/
 
   tx = { from: consumable.PUBLIC_KEY, to: consumable.ADDRESS_UNI_ROUTER, nonce: nonce };
-  path = getPath(tokenA, tokenB);
+  path = (await getPath(tokenA, tokenB));
   if (tokenA == "ETH") {
     tokenA = "WETH";
     tx['value'] = fromSwap;
@@ -58,7 +58,7 @@ async function swapForExact(tokenA, tokenB, fromSwap, toSwap, deadline, nonce) {
   **/
 
   tx = { from: consumable.PUBLIC_KEY, to: consumable.ADDRESS_UNI_ROUTER, nonce: nonce}
-  path = getPath(tokenA, tokenB);
+  path = (await getPath(tokenA, tokenB));
   if (tokenA == "ETH") {
     tx['value'] = fromSwap;
     tokenA = "WETH";
@@ -94,7 +94,7 @@ async function addLiquidity(tokenA, tokenB, desiredA, desiredB, minA, minB, dead
   **/
 
   tx = { from: consumable.PUBLIC_KEY, to: consumable.ADDRESS_UNI_ROUTER, nonce: nonce};
-  path = getPath(tokenA, tokenB);
+  path = (await getPath(tokenA, tokenB));
   if (tokenA == "ETH") {
     // using special method for posting ethereum
     tokenA = "WETH";
@@ -125,7 +125,7 @@ async function removeLiquidity(tokenA, tokenB, liquidity, minA, minB, deadline, 
   **/
 
   tx = { from: consumable.PUBLIC_KEY, to: consumable.ADDRESS_UNI_ROUTER, nonce: nonce};
-  path = getPath(tokenA, tokenB);
+  path = (await getPath(tokenA, tokenB));
   if (tokenA == "ETH") {
     tokenA = "WETH";
     return (await consumable.uniRouterContract.methods.removeLiquidityETH(addresses[tokenB], liquidity,
@@ -210,7 +210,6 @@ async function midPrice(tokenA, tokenB) {
   return price_;
 }
 
-
 async function tradeImpacts(tokenA, tokenB, amountA, amountB, type) {
 
   /***
@@ -233,7 +232,6 @@ async function tradeImpacts(tokenA, tokenB, amountA, amountB, type) {
   const trade = new sushiswap.Trade(route, tokenA_, type)
   return (await trade);
 }
-
 
 module.exports.swapExactFor = swapExactFor;
 module.exports.swapForExact = swapForExact;

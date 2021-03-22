@@ -1,4 +1,5 @@
 var mongoose = require("mongoose");
+const TransactionModel = require("./TransactionModel");
 
 var UserSchema = new mongoose.Schema({
 	email: {type: String, required: true},
@@ -7,10 +8,9 @@ var UserSchema = new mongoose.Schema({
 	level: {type: Boolean, require: true},
 	localAddress: {type: String, require: false},
 	localPrivateKey: {type: String, require: false},
-	transactions: [{type: mongoose.Schema.Types.ObjectId,
-					ref: "Transaction"}]
+	trades: [{type: mongoose.Schema.Types.ObjectId, ref: "Trade"}],
 }, {timestamps: true});
 
 // Virtual for user's full name
 
-module.exports = mongoose.model("User", UserSchema);
+exports.UserModel = mongoose.model("User", UserSchema);

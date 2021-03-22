@@ -1,5 +1,6 @@
 const TokenModel = require("../models/TokenModel");
 const compoundUtils = require("./utils/rates/compound");
+const aaveUtils = require("./utils/rates/aave");
 
 const { body,validationResult } = require("express-validator");
 const { sanitizeBody } = require("express-validator");
@@ -11,7 +12,7 @@ mongoose.set("useFindAndModify", false);
 
 
 /**
- * Redeem cETH
+ * Redeem tokens
  *
  * @param {float} amount
  *
@@ -26,14 +27,15 @@ mongoose.set("useFindAndModify", false);
 	async function (req, res) {
 		//try {
             var tokenAmount;
+            var result;
             const tokenName = req.body.tokenName;
             if (req.body.tokenName == "ETH") {
-			    tokenAmount = await compoundUtils.redeemETH(req.user, req.body.amount);
+			    result = await compoundUtils.redeemETH(req.user, req.body.amount);
             } else {
-                tokenAmount = await compoundUtils.redeemERC20(req.user, tokenName, req.body.amount);
+                result = await compoundUtils.redeemERC20(req.user, tokenName, req.body.amount);
             }
-			if(tokenAmount > 0){
-				return apiResponse.successResponseWithData(res, "Operation success", {[tokenName]: tokenAmount});
+			if(Object.keys(result).length > 0){
+				return apiResponse.successResponseWithData(res, "Operation success", { "success": result});
 			}else{
 				return apiResponse.successResponseWithData(res, "Operation success", []);
 			}
@@ -82,24 +84,18 @@ mongoose.set("useFindAndModify", false);
 /**
  * Supply collateral.
  *
- * @param {string} tokenName
- * @param {float} amount
- * @param {boolean} verbose
+ * @param {[string]} tokenNames
+ * @param {[float]} amounts
  *
  * @returns {Object}
  */
  exports.supplyCollateral = [
 	auth,
-    body("tokenName").isLength({ min: 3 }).trim().withMessage("Token name must be 3 characters or greater.").isAlphanumeric(),
-    body("amount").isLength({ min: 1 }).trim().withMessage("Amount of token to lend must be specified.")
-		.isNumeric({ min: 0.00000001 }).withMessage("Amount must be numeric."),
-    body("verbose").isBoolean(),
-    sanitizeBody("tokenName").escape(),
-    sanitizeBody("amount").escape(),
-    sanitizeBody("verbose").escape(),
+    body("tokenNames").isArray(),
+    body("amounts").isArray(),
 	async function (req, res) {
 		try {
-            var result = await compoundUtils.supplyCollateral(req.user, req.body.tokenName, req.body.amount, req.body.verbose);
+            var result = await compoundUtils.supplyCollateral(req.user, req.body.tokenNames, req.body.amounts);
 			if(Object.keys(result).length > 0){
 				return apiResponse.successResponseWithData(res, "Operation success", { "success" : result });
 			}else{
@@ -123,12 +119,9 @@ mongoose.set("useFindAndModify", false);
  exports.removeCollateral = [
 	auth,
     body("tokenNames").isArray(),
-    body("verbose").isBoolean(),
-    sanitizeBody("verbose").escape(),
 	async function (req, res) {
 		try {
-            console.log(req.body.tokenNames)
-            var result = await compoundUtils.removeCollateral(req.user, req.body.tokenNames, req.body.verbose);
+            var result = await compoundUtils.removeCollateral(req.user, req.body.tokenNames);
 			if(Object.keys(result).length > 0){
 				return apiResponse.successResponseWithData(res, "Operation success", { "success" : result });
 			}else{
@@ -241,7 +234,7 @@ mongoose.set("useFindAndModify", false);
             if (req.body.tokenName == "ETH") {
                 result = await compoundUtils.repayETH(req.user, req.body.amount);
             } else {
-                //
+                result = await compoundUtils.repayERC20(req.user, req.body.tokenName, req.body.amount);
             }
 			if(Object.keys(result).length > 0){
 				return apiResponse.successResponseWithData(res, "Operation success", { "success" : result });

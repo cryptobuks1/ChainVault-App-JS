@@ -7,6 +7,8 @@ var UserSchema = new mongoose.Schema({
 	level: {type: Boolean, require: true},
 	localAddress: {type: String, require: false},
 	localPrivateKey: {type: String, require: false},
+	transactions: [{type: mongoose.Schema.Types.ObjectId,
+					ref: "Transaction"}]
 }, {timestamps: true});
 
 // Virtual for user's full name

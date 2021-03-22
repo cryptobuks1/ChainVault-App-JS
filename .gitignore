@@ -65,6 +65,3 @@ typings/
 
 #DS_Store
 .DS_Store
-
-#package-lock
-package-lock.json

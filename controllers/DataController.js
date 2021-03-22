@@ -1,4 +1,4 @@
-const TokenModel = require("../models/TokenModel");
+const { TokenModel } = require("../models/TokenModel");
 
 const { body,validationResult } = require("express-validator");
 const { sanitizeBody } = require("express-validator");

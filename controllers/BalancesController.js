@@ -1,4 +1,4 @@
-const TokenModel = require("../models/TokenModel");
+const { TokenModel } = require("../models/TokenModel");
 const utils = require("./utils/utils");
 
 const { body,validationResult } = require("express-validator");

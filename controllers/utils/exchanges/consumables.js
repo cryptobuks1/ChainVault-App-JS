@@ -10,10 +10,14 @@ const HDWalletProvider = require('truffle-hdwallet-provider');
 const provider = new HDWalletProvider(PRIVATE_KEY, INFURA_URI);
 const web3 = new Web3(provider);
 
-const TokenModel = require("../../../models/TokenModel");
-const ContractModel = require("../../../models/ContractModel");
+const { TokenModel } = require("../../../models/TokenModel");
+const { ContractModel } = require("../../../models/ContractModel");
 const routerContract = require("../../../contracts/IUniswapV2Router02.json"); // uni abi
-const ercContract = require("../../../contracts/IERC20.json"); // eth abi
+
+// contracts
+const {
+    ercContract,
+} = require('../../contracts/Compound.json');
 
 var UNIGRAPH_URI;
 var SUSHIGRAPH_URI;

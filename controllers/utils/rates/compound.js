@@ -1,9 +1,9 @@
 require("dotenv").config();
 const CHAIN = process.env.CHAIN;
 
-const UserModel = require('../../../models/UserModel');
-const TokenModel = require('../../../models/TokenModel');
-const ContractModel = require('../../../models/ContractModel');
+const { UserModel } = require('../../../models/UserModel');
+const { TokenModel } = require('../../../models/TokenModel');
+const { ContractModel } = require('../../../models/ContractModel');
 
 const HDWalletProvider = require('truffle-hdwallet-provider');
 const Web3 = require('web3');
@@ -19,6 +19,14 @@ const infuraURI = "https://rinkeby.infura.io/v3/eb8d27a5b3d24313b6d8a13e56464ce3
 
 const ethDecimals = 18; // Ethereum has 18 decimal places
 const compoundCoins = ["DAI","USDC","BAT","ETH","USDT","ZRX"];
+
+const {
+    cEthAbi,
+    comptrollerAbi,
+    priceFeedAbi,
+    cErcAbi,
+    erc20Abi,
+  } = require('../../../contracts/Compound.json');
 
 // get coin decimals
 var tokenInfo;
@@ -213,14 +221,6 @@ exports.redeemERC20 = async function(user, tokenName, amount) {
     let tokenCreated = finalWalletBalance - currWalletBalance;
     return { tokenCreated: tokenCreated, txn: txn};
 }
-
-const {
-  cEthAbi,
-  comptrollerAbi,
-  priceFeedAbi,
-  cErcAbi,
-  erc20Abi,
-} = require('../../../contracts/Compound.json');
 
 const logBalances = (tokenName, web3, cToken, underlying, walletAddress) => {
     return new Promise(async (resolve, reject) => {

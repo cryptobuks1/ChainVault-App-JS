@@ -2,8 +2,8 @@ require("dotenv").config();
 const CHAIN = process.env.CHAIN;
 const infuraURI = process.env.INFURA_URI;
 
-const UserModel = require("../../models/UserModel");
-const TokenModel = require("../../models/TokenModel");
+const { UserModel } = require("../../models/UserModel");
+const { TokenModel } = require("../../models/TokenModel");
 
 const HDWalletProvider = require('truffle-hdwallet-provider');
 const fs = require('fs');
@@ -11,11 +11,6 @@ const Web3 = require('web3');
 const { urlencoded } = require("express");
 
 // global variables
-const erc20ABIFpath = process.env.ERC20_ABI_FPATH;
-
-let IERC20 = fs.readFileSync(erc20ABIFpath);
-IERC20 = JSON.parse(IERC20).abi;
-
 const privateKey = process.env.PRIVATE_KEY;
 const provider = new HDWalletProvider(privateKey, infuraURI);
 const web3Dummy = new Web3(provider);
@@ -28,15 +23,22 @@ async function web3User(user) {
   return web3;
 }
 
+const {
+    cEthAbi,
+    comptrollerAbi,
+    priceFeedAbi,
+    cErcAbi,
+    erc20Abi,
+  } = require('../../contracts/Compound.json');
+
 // get coin decimals
 var tokenInfo;
 var loadTokens = async function() {
     var tokens = {};
     const tokensData = (await TokenModel.find());
-    const ercContract = require("../../contracts/IERC20.json"); // eth abi
     for (var token of tokensData) {
       if (token[CHAIN] != "0x0"){
-        tokens[token.name] = { "decimal": token.decimal, "address": token[CHAIN], "contract": new web3Dummy.eth.Contract(ercContract.abi, token[CHAIN]) };
+        tokens[token.name] = { "decimal": token.decimal, "address": token[CHAIN], "contract": new web3Dummy.eth.Contract(erc20Abi, token[CHAIN]) };
       } else{
         var entry = { "decimal": token.decimal, "address": token[CHAIN], "contract": "" };
         tokens[token.name] = entry;//{ "decimal": String(token.decimal), "address": token[CHAIN], "contract": "" };
@@ -49,7 +51,7 @@ loadTokens().then((info) => {
 });
 
 exports.createWallet = function() {
-    var account = web3.eth.accounts.create();
+    var account = web3Dummy.eth.accounts.create();
     return account;
 }
 
@@ -58,7 +60,6 @@ exports.createWallet = function() {
 // IDs get passed as ObjectID
 // TODO: resolve or just use email?
 exports.getBalances = async function(user) {
-
     const privateKey = process.env.PRIVATE_KEY;
     const provider = new HDWalletProvider(privateKey, infuraURI);
     const web3 = new Web3(provider);
@@ -79,7 +80,7 @@ exports.getBalances = async function(user) {
             if (address == "0x0") {
               continue;
             }
-            let tokenInst = new web3.eth.Contract(IERC20, address);
+            let tokenInst = new web3.eth.Contract(erc20Abi, address);
             let balance = await tokenInst.methods.balanceOf(walletAddress).call();
             balance /= Math.pow(10, tokenInfo[token]["decimal"]);
             result[token] = balance;
@@ -105,7 +106,7 @@ exports.getBalance = async function(user, tokenName) {
         ethBalance /= Math.pow(10, tokenInfo[tokenName]["decimal"]);
         result["ETH"] = ethBalance;
     } else {
-        let tokenInst = new web3.eth.Contract(IERC20, tokenInfo[tokenName]["address"]);
+        let tokenInst = new web3.eth.Contract(erc20Abi, tokenInfo[tokenName]["address"]);
         let balance = await tokenInst.methods.balanceOf(walletAddress).call();
         balance /= Math.pow(10, tokenInfo[tokenName]["decimal"]);
         result[tokenName] = balance;

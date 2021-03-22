@@ -13,7 +13,9 @@ const provider = new HDWalletProvider(MNEMONIC, INFURA_URI);
 const web3 = new Web3(provider);
 
 const routerContract = require("../../../contracts/IUniswapV2Router02.json"); // uni abi
-const ercContract = require("../../../contracts/ICERC20.json"); // eth abi
+const ercContract = require("../../../contracts/IERC20.json"); // eth abi
+///const TokenModel = require("../models/TokenModel");
+///const ContractModel = require("../models/ContractModel");
 
 /// RINKEBY TESTNET ENDPOINTS
 const ADDRESS_UNI_ROUTER = "0x7a250d5630b4cf539739df2c5dacb4c659f2488d"; // UNISWAP address

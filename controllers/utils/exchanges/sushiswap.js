@@ -1,7 +1,16 @@
 //const { wrapper } = require('./module.js');
 const sushiswap = require('@sushiswap/sdk');
 const consumable = require('./consumables.js')
+var assert = require('assert');
 
+async function getPath(tokenA, tokenB) {
+  if (tokenA == "ETH"){
+    tokenA = "WETH";
+  } else if (tokenB=="ETH") {
+    tokenB = "WETH";
+  }
+  return [consumable.addresses[tokenA], consumable.addresses[tokenB]];
+}
 
 async function swapExactFor(tokenA, tokenB, fromSwap, toSwap, deadline, nonce) {
 
@@ -17,8 +26,8 @@ async function swapExactFor(tokenA, tokenB, fromSwap, toSwap, deadline, nonce) {
    * @returns {Object}
   **/
 
-  path = [consumable.addresses[tokenA], consumable.addresses[tokenB]];
   tx = { from: consumable.PUBLIC_KEY, to: consumable.ADDRESS_UNI_ROUTER, nonce: nonce };
+  path = getPath(tokenA, tokenB);
   if (tokenA == "ETH") {
     tokenA = "WETH";
     tx['value'] = fromSwap;
@@ -48,8 +57,8 @@ async function swapForExact(tokenA, tokenB, fromSwap, toSwap, deadline, nonce) {
    * @returns {Object}
   **/
 
-  path = [consumable.addresses[tokenA], consumable.addresses[tokenB]];
   tx = { from: consumable.PUBLIC_KEY, to: consumable.ADDRESS_UNI_ROUTER, nonce: nonce}
+  path = getPath(tokenA, tokenB);
   if (tokenA == "ETH") {
     tx['value'] = fromSwap;
     tokenA = "WETH";
@@ -84,8 +93,8 @@ async function addLiquidity(tokenA, tokenB, desiredA, desiredB, minA, minB, dead
   * @returns {Object}
   **/
 
-  path = [consumable.addresses[tokenA], consumable.addresses[tokenB]];
   tx = { from: consumable.PUBLIC_KEY, to: consumable.ADDRESS_UNI_ROUTER, nonce: nonce};
+  path = getPath(tokenA, tokenB);
   if (tokenA == "ETH") {
     // using special method for posting ethereum
     tokenA = "WETH";
@@ -115,8 +124,8 @@ async function removeLiquidity(tokenA, tokenB, liquidity, minA, minB, deadline, 
    * @returns {Object}
   **/
 
-  path = [consumable.addresses[tokenA], consumable.addresses[tokenB]];
   tx = { from: consumable.PUBLIC_KEY, to: consumable.ADDRESS_UNI_ROUTER, nonce: nonce};
+  path = getPath(tokenA, tokenB);
   if (tokenA == "ETH") {
     tokenA = "WETH";
     return (await consumable.uniRouterContract.methods.removeLiquidityETH(addresses[tokenB], liquidity,
@@ -180,7 +189,7 @@ async function routeToLP(tokenA, tokenB, amountA, amountB) {
   return String(address);
 }
 
-async function price(tokenA, tokenB) {
+async function midPrice(tokenA, tokenB) {
 
   /***
   *  @param {string} tokenA is token,
@@ -202,7 +211,7 @@ async function price(tokenA, tokenB) {
 }
 
 
-async function trade(tokenA, tokenB, amountA, amountB, type) {
+async function tradeImpacts(tokenA, tokenB, amountA, amountB, type) {
 
   /***
   *  @param {string} tokenA is token
@@ -233,5 +242,5 @@ module.exports.removeLiquidity = removeLiquidity;
 module.exports.tokenMaker = tokenMaker;
 module.exports.pairMaker = pairMaker;
 module.exports.routeToLP = routeToLP;
-module.exports.price = price;
-module.exports.trade = trade;
+module.exports.midPrice = midPrice;
+module.exports.tradeImpacts = tradeImpacts;

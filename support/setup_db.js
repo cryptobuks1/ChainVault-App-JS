@@ -98,7 +98,7 @@ var backfillDB = async function() {
 };
 
 backfillDB();
-lpTool.populateLPs();
+//lpTool.populateLPs();
 
 var insert = async function(model, objs) {
     for (var obj of objs) {

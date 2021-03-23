@@ -10,10 +10,14 @@ const HDWalletProvider = require('truffle-hdwallet-provider');
 const provider = new HDWalletProvider(PRIVATE_KEY, INFURA_URI);
 const web3 = new Web3(provider);
 
-const TokenModel = require("../../../models/TokenModel");
-const ContractModel = require("../../../models/ContractModel");
+const { TokenModel } = require("../../../models/TokenModel");
+const { ContractModel } = require("../../../models/ContractModel");
 const routerContract = require("../../../contracts/IUniswapV2Router02.json"); // uni abi
-const ercContract = require("../../../contracts/IERC20.json"); // eth abi
+
+// contracts
+const {
+    ercContract,
+} = require('../../contracts/Compound.json');
 
 var UNIGRAPH_URI;
 var SUSHIGRAPH_URI;
@@ -35,7 +39,7 @@ async function main() {
   const tokensData = (await TokenModel.find());
   for (var token of tokensData) {
     if (token[CHAIN] != "0x0") {
-      tokens[token.name] = { "decimal": token.decimal, "address": token[CHAIN], "contract": new web3.eth.Contract(ercContract.abi, token[CHAIN]) };
+      tokens[token.name] = { "decimal": token.decimal, "address": token[CHAIN], "contract": new web3.eth.Contract(ercContract, token[CHAIN]) };
     } else {
       tokens[token.name] = { "decimal": token.decimal, "address": token[CHAIN], "contract": "" };
     }

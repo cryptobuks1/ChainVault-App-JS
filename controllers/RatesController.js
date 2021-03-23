@@ -1,4 +1,4 @@
-const TokenModel = require("../models/TokenModel");
+const { TokenModel } = require("../models/TokenModel");
 const compoundUtils = require("./utils/rates/compound");
 const aaveUtils = require("./utils/rates/aave");
 

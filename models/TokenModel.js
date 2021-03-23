@@ -9,4 +9,5 @@ var TokenSchema = new mongoose.Schema({
 	decimal: {type: Number, required: true}},
   {timestamps: true});
 
-module.exports = mongoose.model("Token", TokenSchema);
+exports.TokenSchema = TokenSchema;
+exports.TokenModel = mongoose.model("Token", TokenSchema);

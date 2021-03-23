@@ -13,4 +13,5 @@ var UserSchema = new mongoose.Schema({
 
 // Virtual for user's full name
 
+exports.UserSchema = UserSchema;
 exports.UserModel = mongoose.model("User", UserSchema);

@@ -1,5 +1,5 @@
 const { chai, server, should } = require("./testConfig");
-const UserModel = require("../models/UserModel");
+const { UserModel } = require("../models/UserModel");
 
 /**
  * Test cases to test all the authentication APIs
@@ -19,7 +19,7 @@ describe("Auth", () => {
 
 	// Prepare data for testing
 	const testData = {
-		"email":"test@gmail.com",
+		"email":"test2@gmail.com",
 		"password":"password123",
 		"remoteAddress":"0xB9b1225afcFf6AF2c1c958699a2EEbBAF9352964",
 		"level":true

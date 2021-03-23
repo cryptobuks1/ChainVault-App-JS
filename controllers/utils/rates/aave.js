@@ -1,5 +1,5 @@
-const UserModel = require('../../../models/UserModel');
-const TokenModel = require('../../../models/TokenModel');
+const { UserModel } = require('../../../models/UserModel');
+const { TokenModel } = require('../../../models/TokenModel');
 
 const HDWalletProvider = require('truffle-hdwallet-provider');
 const Web3 = require('web3');

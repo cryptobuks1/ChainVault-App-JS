@@ -8,4 +8,6 @@ var ContractSchema = new mongoose.Schema({
   RINKEBY: {type: String, required: true}},
   {timestamps: true});
 
-module.exports = mongoose.model("Contract", ContractSchema);
+
+exports.ContractSchema = ContractSchema;
+exports.ContractModel = mongoose.model("Contract", ContractSchema);

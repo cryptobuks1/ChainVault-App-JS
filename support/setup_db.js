@@ -4,13 +4,13 @@ var dbName = "chainvaultdb";
 var mongoose = require("mongoose");
 
 // import models
-const TokenModel = require('../models/TokenModel');
-const ContractModel = require('../models/ContractModel');
-const UserModel = require('../models/UserModel');
-const TransactionModel = require('../models/TransactionModel');
+const { TokenModel } = require('../models/TokenModel');
+const { ContractModel } = require('../models/ContractModel');
+const { UserModel } = require('../models/UserModel');
+const { TradeModel } = require('../models/TransactionModel');
 const lpTool = require('./setup_db_lptokens');
 
-const MODELS = [TokenModel, ContractModel, UserModel.UserModel, TransactionModel.TradeModel];
+const MODELS = [TokenModel, ContractModel, UserModel, TradeModel];
 
 mongoose.connect(MONGODB_URL, { useNewUrlParser: true, useUnifiedTopology: true }).then(() => {
 	//don't show the log when it is test
@@ -84,11 +84,11 @@ var backfillDB = async function() {
         {transactionID: "0x7d75ee86b47209ab567724ef7697192177af3d7dd7865f600f32604348abce7b", exchange: "Uniswap", tokenA: "ETH",
         tokenB: "DAI", sizeA: 1., sizeB: 1891.1, priceA: 1891.1, priceB: 1., gasPrice: 0.0001}
     ];
-    await insert(TransactionModel.TradeModel, tradesData);
+    await insert(TradeModel, tradesData);
 
     // push trade onto user
-    const users = await UserModel.UserModel.find();
-    const trades1 = await TransactionModel.TradeModel.find();
+    const users = await UserModel.find();
+    const trades1 = await TradeModel.find();
     for (var user of users) {
         for (var trade of trades1) {
             user.trades.push(trade);

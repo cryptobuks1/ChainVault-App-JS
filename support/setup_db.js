@@ -76,7 +76,7 @@ var backfillDB = async function() {
         { email: "test@gmail.com", password: "$2b$10$ZyWLtNjZ5fKGsH/GjPgFteb3/b5tT0ne92TTAkqaSU4Eji6vK1Pqa", remoteAddress: "0xB9b1225afcFf6AF2c1c958699a2EEbBAF9352964",
             level: true, localAddress: "0xD93ec03787218Ea08EA3AAf36064A0f7F62543A4", localPrivateKey: "98c642e73ab4e301a8234a90a3d47ebdd19a54897c2b037c74bee853e5f09771"},
     ];
-    await insert(UserModel.UserModel, usersData);
+    await insert(UserModel, usersData);
 
     // fill trades
     console.log("fill trades");

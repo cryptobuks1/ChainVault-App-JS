@@ -16,8 +16,8 @@ const routerContract = require("../../../contracts/IUniswapV2Router02.json"); //
 
 // contracts
 const {
-    ercContract,
-} = require('../../contracts/Compound.json');
+    erc20Abi,
+} = require('../../../contracts/Compound.json');
 
 var UNIGRAPH_URI;
 var SUSHIGRAPH_URI;
@@ -39,7 +39,7 @@ async function main() {
   const tokensData = (await TokenModel.find());
   for (var token of tokensData) {
     if (token[CHAIN] != "0x0") {
-      tokens[token.name] = { "decimal": token.decimal, "address": token[CHAIN], "contract": new web3.eth.Contract(ercContract, token[CHAIN]) };
+      tokens[token.name] = { "decimal": token.decimal, "address": token[CHAIN], "contract": new web3.eth.Contract(erc20Abi, token[CHAIN]) };
     } else {
       tokens[token.name] = { "decimal": token.decimal, "address": token[CHAIN], "contract": "" };
     }
@@ -54,7 +54,7 @@ module.exports.PRIVATE_KEY = process.env.PRIVATE_KEY;
 module.exports.CHAIN = process.env.CHAIN;
 module.exports.INFURA_URI = process.env.INFURA_URI;
 module.exports.routerContract = routerContract;
-module.exports.ercContract = ercContract;
+module.exports.ercContract = erc20Abi;
 module.exports.UNIGRAPH_URI = UNIGRAPH_URI;
 module.exports.SUSHIGRAPH_URI = SUSHIGRAPH_URI;
 module.exports.contracts = contracts;

@@ -8,6 +8,7 @@ const TokenModel = require('../models/TokenModel');
 const ContractModel = require('../models/ContractModel');
 const UserModel = require('../models/UserModel');
 const TransactionModel = require('../models/TransactionModel');
+const lpTool = require('./setup_db_lptokens');
 
 const MODELS = [TokenModel, ContractModel, UserModel.UserModel, TransactionModel.TradeModel];
 
@@ -32,6 +33,8 @@ var backfillDB = async function() {
     var tokensData = [
         { name: "ETH", description: "ETH",
         MAINNET: "0x0", KOVAN: "0x0", RINKEBY: "0x0", decimal: 18},
+        { name: "WETH", description: "WETH",
+        MAINNET: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2", KOVAN: "0xd0A1E359811322d97991E03f863a0C30C2cF029C", RINKEBY: "0xFB29A3f194b254cB472341F80C63Be99469b0DF6", decimal: 18},
         { name: "DAI", description: "DAI",
         MAINNET: "0x5592EC0cfb4dbc12D3aB100b257153436a1f0FEa", KOVAN: "0x1528F3FCc26d13F7079325Fb78D9442607781c8C", RINKEBY: "0x5592EC0cfb4dbc12D3aB100b257153436a1f0FEa",  decimal: 18},
         { name: "MKR", description: "MKR",
@@ -74,7 +77,7 @@ var backfillDB = async function() {
             level: true, localAddress: "0xD93ec03787218Ea08EA3AAf36064A0f7F62543A4", localPrivateKey: "98c642e73ab4e301a8234a90a3d47ebdd19a54897c2b037c74bee853e5f09771"},
     ];
     await insert(UserModel.UserModel, usersData);
-    
+
     // fill trades
     console.log("fill trades");
     var tradesData = [
@@ -95,6 +98,7 @@ var backfillDB = async function() {
 };
 
 backfillDB();
+lpTool.populateLPs();
 
 var insert = async function(model, objs) {
     for (var obj of objs) {

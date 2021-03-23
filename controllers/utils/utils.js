@@ -16,10 +16,12 @@ const provider = new HDWalletProvider(privateKey, infuraURI);
 const web3Dummy = new Web3(provider);
 
 async function web3User(user) {
+
   const userSearch = await UserModel.findOne({email: user.email});
   const privateKey = userSearch.localPrivateKey;
   const provider = new HDWalletProvider(privateKey, infuraURI);
   const web3 = new Web3(provider);
+  const publicKey = (await (web3.eth.getAccounts()))[0];
   return web3;
 }
 
@@ -28,7 +30,7 @@ const {
     comptrollerAbi,
     priceFeedAbi,
     cErcAbi,
-    erc20Abi,
+    erc20Abi
   } = require('../../contracts/Compound.json');
 
 // get coin decimals
@@ -51,6 +53,7 @@ loadTokens().then((info) => {
 });
 
 exports.createWallet = function() {
+
     var account = web3Dummy.eth.accounts.create();
     return account;
 }
@@ -60,6 +63,7 @@ exports.createWallet = function() {
 // IDs get passed as ObjectID
 // TODO: resolve or just use email?
 exports.getBalances = async function(user) {
+
     const privateKey = process.env.PRIVATE_KEY;
     const provider = new HDWalletProvider(privateKey, infuraURI);
     const web3 = new Web3(provider);
@@ -93,10 +97,7 @@ exports.getBalances = async function(user) {
 // IDs get passed as ObjectID
 exports.getBalance = async function(user, tokenName) {
 
-    const privateKey = process.env.PRIVATE_KEY;
-    const provider = new HDWalletProvider(privateKey, infuraURI);
-    const web3 = new Web3(provider);
-
+    web3 = await web3User(user);
     var walletAddress = user.localAddress;
     result = {};
 

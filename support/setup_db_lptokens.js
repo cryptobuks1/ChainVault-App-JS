@@ -27,7 +27,14 @@ var insert = async function(model, objs) {
 }
 
 function k_combinations(set, k) {
-  // RETURN SET CHOOSE K ENTRIES
+
+    /***
+    * @param {Object} set is set of inputs,
+    * @param {int} k is number to choose
+    *
+    * @returns {int} N choose k selections
+    ***/
+      // RETURN SET CHOOSE K ENTRIES
 	var i, j, combs, head, tailcombs;
 
 	// There is no way to take e.g. sets of 5 elements from
@@ -135,6 +142,7 @@ async function populateLPs() {
   //console.log(Object.keys(tokensTemp).filter(function(a){return a[0] !== 'c'}));
   list = Object.keys(tokensTemp).filter(function(a){return a[0] !== 'c'});
   const lpPairs = k_combinations(list,2);
+  console.log("Generating LPs now")
 
   var tokensOutput = {};
   for (const exchange of exchanges) {
@@ -145,6 +153,8 @@ async function populateLPs() {
   }
 
   for (const exchange of exchanges) {
+    console.log("Generating lps for exchange=",exchange)
+
     for (const chain of chains) {
       var tokensTemp = {};
       for (var token of tokensData) {
@@ -152,7 +162,7 @@ async function populateLPs() {
           tokensTemp[token.name] = { "decimal": token.decimal, "address": token[chain] };
         }
       }
-      //console.log(tokens);
+
       for (const lpPair of lpPairs) {
         const pairs = (await pairMaker(exchange, tokensTemp,lpPair[0],lpPair[1],0,0,chain));
         const symbol = lpPair[0]+'_'+lpPair[1]+"_"+exchange;
@@ -173,4 +183,5 @@ async function populateLPs() {
   await insert(TokenModel, tokenArr);
   console.log("LP Tokens successfully populated");
 }
+populateLPs();
 module.exports.populateLPs = populateLPs;

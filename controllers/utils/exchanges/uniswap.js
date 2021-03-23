@@ -35,23 +35,23 @@ async function swapExactFor(web3, tokenA, tokenB, fromSwap, toSwap, deadline) {
 
   // TODO: HOW CAN WE MAKE ROUTER / WEB3 INSTANCE INTO A USER DEFINED VARIABLE?
 
-  const public_key = (await (web3.eth.getAccounts()))[0];
-  const router_address = await (consumable.contracts["UNI_ROUTER"]["address"]);
-  tx = { from: public_key, to: router_address };
-  uniRouterContract = await (new web3.eth.Contract(consumable.routerContract.abi, router_address));
+  const publicKey = (await (web3.eth.getAccounts()))[0];
+  const routerAddress = await (consumable.contracts["UNI_ROUTER"]["address"]);
+  tx = { from: publicKey, to: routerAddress };
+  uniRouterContract = await (new web3.eth.Contract(consumable.routerContract.abi, routerAddress));
   path = (await getPath(tokenA, tokenB));
   if (tokenA == "ETH") {
     tx['value'] = fromSwap;
     tokenA = "WETH";
     return (await uniRouterContract.methods.swapExactETHForTokens(toSwap, path,
-                                              public_key, deadline).send(tx));
+                                              publicKey, deadline).send(tx));
   } else if (tokenB == "ETH") {
     tokenB = "WETH";
     return (await uniRouterContract.methods.swapExactTokensForETH(fromSwap, toSwap, path,
-                                              public_key, deadline).send(tx));
+                                              publicKey, deadline).send(tx));
   } else {
     return (await uniRouterContract.methods.swapExactTokensForTokens(fromSwap, toSwap, path,
-                                              public_key, deadline).send(tx));
+                                              publicKey, deadline).send(tx));
   }
 }
 
@@ -68,26 +68,26 @@ async function swapForExact(tokenA, tokenB, fromSwap, toSwap, deadline) {
    * @returns {Object}
   **/
 
-  const public_key = (await (web3.eth.getAccounts()))[0];
-  const router_address = await (consumable.contracts["UNI_ROUTER"]["address"]);
-  tx = { from: public_key, to: router_address };
-  uniRouterContract = await (new web3.eth.Contract(consumable.routerContract.abi, router_address));
+  const publicKey = (await (web3.eth.getAccounts()))[0];
+  const routerAddress = await (consumable.contracts["UNI_ROUTER"]["address"]);
+  tx = { from: publicKey, to: routerAddress };
+  uniRouterContract = await (new web3.eth.Contract(consumable.routerContract.abi, routerAddress));
   path = (await getPath(tokenA, tokenB));
   if (tokenA == "ETH") {
     tokenA = "WETH";
     tx['value'] = fromSwap;
     // using special method for trading ethereum
     return (await uniRouterContract.methods.swapETHForExactTokens(toSwap, path,
-                                               public_key, deadline).send(tx));
+                                               publicKey, deadline).send(tx));
   } else if (tokenB == "ETH") {
     tokenB = "WETH";
     // using special method for trading for ethereum
     return (await uniRouterContract.methods.swapTokensForExactETH(toSwap, fromSwap, path,
-                                               public_key, deadline).send(tx));
+                                               publicKey, deadline).send(tx));
   } else {
     // using erc20 only method
     return (await uniRouterContract.methods.swapTokensForExactTokens(toSwap, fromSwap, path,
-                                               consumable.PUBLIC_KEY, deadline).send(tx));
+                                               publicKey, deadline).send(tx));
   }
 }
 
@@ -105,22 +105,23 @@ async function addLiquidity(web3, tokenA, tokenB, desiredA, desiredB, minA, minB
   *
   * @returns {Object}
   **/
-
-  const public_key = (await (web3.eth.getAccounts()))[0];
-  const router_address = await (consumable.contracts["UNI_ROUTER"]["address"]);
-  tx = { from: public_key, to: router_address };
-  uniRouterContract = await (new web3.eth.Contract(consumable.routerContract.abi, router_address));
+  const publicKey = (await (web3.eth.getAccounts()))[0];
+  const routerAddress = await (consumable.contracts["UNI_ROUTER"]["address"]);
+  tx = { from: publicKey, to: routerAddress };
+  uniRouterContract = await (new web3.eth.Contract(consumable.routerContract.abi, routerAddress));
   path = (await getPath(tokenA, tokenB));
   if (tokenA == "ETH") {
     // using special method for posting ethereum
     tx['value'] = desiredA;
-    return (await uniRouterContract.methods.addLiquidityETH(consumable.tokens[tokenB].address,
-                                               desiredB, minA, minB, consumable.PUBLIC_KEY, deadline).send(tx));
+    result = (await uniRouterContract.methods.addLiquidityETH(consumable.tokens[tokenB].address,
+                                               desiredB, minA, minB, publicKey, deadline).send(tx));
+    return result;
+
   } else {
     // using other method
     return (await uniRouterContract.methods.addLiquidity(consumable.tokens[tokenA].address,
                                                consumable.tokens[tokenB].address, desiredA, desiredB, minA, minB,
-                                               consumable.PUBLIC_KEY, deadline).send(tx));
+                                               publicKey, deadline).send(tx));
   }
 }
 
@@ -138,18 +139,18 @@ async function removeLiquidity(web3, tokenA, tokenB, liquidity, minA, minB, dead
    * @returns {Object}
   **/
 
-  const public_key = (await (web3.eth.getAccounts()))[0];
-  const router_address = await (consumable.contracts["UNI_ROUTER"]["address"]);
-  tx = { from: public_key, to: router_address };
-  uniRouterContract = await (new web3.eth.Contract(consumable.routerContract.abi, router_address));
+  const publicKey = (await (web3.eth.getAccounts()))[0];
+  const routerAddress = await (consumable.contracts["UNI_ROUTER"]["address"]);
+  tx = { from: publicKey, to: routerAddress };
+  uniRouterContract = await (new web3.eth.Contract(consumable.routerContract.abi, routerAddress));
   path = (await getPath(tokenA, tokenB));
   if (tokenA == "ETH") {
     tokenA = "WETH";
     return (await uniRouterContract.methods.removeLiquidityETH(consumable.tokens[tokenB].address, liquidity,
-                  minA, minB, consumable.PUBLIC_KEY, deadline).send(tx));
+                  minA, minB, publicKey, deadline).send(tx));
   } else {
     return (await uniRouterContract.methods.removeLiquidity(consumable.tokens[tokenA].address, consumable.tokens[tokenB].address,
-                  liquidity, minA, minB, consumable.PUBLIC_KEY, deadline).send(tx));
+                  liquidity, minA, minB, publicKey, deadline).send(tx));
   }
 }
 
@@ -181,7 +182,7 @@ async function pairMaker(tokenA, tokenB, amountA, amountB) {
   if (tokenA == "ETH") {
     tokenA = "WETH";
   }
-  assert(tokenB != "WETH", "tokenB must not be ETH");
+  assert(tokenB != "ETH", "tokenB must not be ETH");
   const tokenA_ = await tokenMaker(tokenA, amountA);
   const tokenB_ = await tokenMaker(tokenB, amountB);
   const pair = await (new uniswap.Pair(tokenA_, tokenB_));
